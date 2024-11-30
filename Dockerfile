@@ -10,7 +10,7 @@ ARG JWT_VERSION=6.2.0
 
 RUN apk add --no-cache curl bash
 
-RUN curl --location https://github.com/GoogleCloudPlatform/berglas/releases/download/v${BERGLAS_VERSION}/berglas_${BERGLAS_VERSION}_linux_arm64.tar.gz \
+RUN curl --location https://github.com/GoogleCloudPlatform/berglas/releases/download/v${BERGLAS_VERSION}/berglas_${BERGLAS_VERSION}_linux_amd64.tar.gz \
     | tar -xzC /usr/local/bin
 
 RUN curl --location https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz \
