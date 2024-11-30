@@ -19,6 +19,6 @@ RUN curl --location https://github.com/cli/cli/releases/download/v${GH_VERSION}/
 RUN curl --location https://github.com/mike-engel/jwt-cli/releases/download/${JWT_VERSION}/jwt-linux.tar.gz \
     | tar -xzC /usr/local/bin
     
-COPY entrypoint.bash /builder/tf-plan-post.sh
+COPY tf-plan-post.sh /builder/tf-plan-post.sh
 
 ENTRYPOINT ["bash","/builder/tf-plan-post.sh"]
