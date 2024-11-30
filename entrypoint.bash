@@ -42,18 +42,18 @@ Examples:
     $(basename "$0") --pr-number=1234 --repo=org/repo --app-id=1234 --installation-key-secret-name=sm://my-project/my-installation-key
 
 Options:
-  --help ${CYAN}${END}                                                      Show this message
-  --token-secret-name=${CYAN}TOKEN_SECRET_NAME${END}                        Google secret manager name of the GitHub token 
-                                                                            (Example: sm://my-project/my-github-token)
-  --app-id=${CYAN}APP_ID${END}                                              Github App ID 
-                                                                            (REQUIRED if --token-secret-name is not provided, needs --installation-key-secret-name)
-  --installation-id=${CYAN}INSTALLATION_ID${END}                            Installation id, if not provided, it will be fetched from the GitHub API
-  --installation-key-secret-name=${CYAN}INSTALLATION_KEY_SECRET_NAME${END}  Installation key saved in Google Secret Manager 
-                                                                            (REQUIRED if --app-id is provided, Example: sm://my-project/my-installation-key)
-  --pr-number=${CYAN}PR_NUMBER${END}                                        Pull Request number (REQUIRED)
-  --repo=${CYAN}REPO${END}                                                  Repository (REQUIRED, Example: org/repo)
-  --plan-text=${CYAN}PLAN${END}                                             Terraform plan text output (or error output) 
-  --title=${CYAN}TITLE${END}                                                Title for the review comment (DEFAULT: $TITLE)
+  --help                                                       Show this message
+  --token-secret-name=TOKEN_SECRET_NAME                        Google secret manager name of the GitHub token
+                                                               (Example: sm://my-project/my-github-token)
+  --app-id=APP_ID                                              Github App ID
+                                                               (REQUIRED if --token-secret-name is not provided, needs --installation-key-secret-name)
+  --installation-id=INSTALLATION_ID                            Installation id, if not provided, it will be fetched from the GitHub API
+  --installation-key-secret-name=INSTALLATION_KEY_SECRET_NAME  Installation key saved in Google Secret Manager
+                                                               (REQUIRED if --app-id is provided, Example: sm://my-project/my-installation-key)
+  --pr-number=PR_NUMBER                                        Pull Request number (REQUIRED)
+  --repo=REPO                                                  Repository (REQUIRED, Example: org/repo)
+  --plan-text=PLAN                                             Terraform plan text output (or error output)
+  --title=TITLE                                                Title for the review comment (DEFAULT: \"$TITLE\")
 
 Required commands: ${!REQUIRED_COMMANDS[*]}
 "
@@ -86,6 +86,10 @@ for i in "$@"; do
     ;;
   --pr-number=*)
     PR_NUMBER="${i#*=}"
+    shift # past argument=value
+    ;;
+  --title=*)
+    TITLE="${i#*=}"
     shift # past argument=value
     ;;
   --plan-text=*)
