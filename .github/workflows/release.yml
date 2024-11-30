@@ -15,7 +15,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/ivank/cloudbuild-github-terraform
+          images: ghcr.io/ivank/tf-plan-post
           tags: |
             type=semver,pattern={{version}}
             type=sha

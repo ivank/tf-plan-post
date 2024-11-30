@@ -14,14 +14,14 @@ else
   END=''
 fi
 
-INSTALLATION_ID=""
-TOKEN_SECRET_NAME=""
-APP_ID=""
-INSTALLATION_KEY_SECRET_NAME=""
-PR_NUMBER=""
-REPO=""
-TITLE="### Generated Terraform Plan"
-PLAN_TEXT=""
+INSTALLATION_ID="${INSTALLATION_ID:-}"
+TOKEN_SECRET_NAME="${TOKEN_SECRET_NAME:-}"
+APP_ID="${APP_ID:-}"
+INSTALLATION_KEY_SECRET_NAME="${INSTALLATION_KEY_SECRET_NAME:-}"
+PR_NUMBER="${PR_NUMBER:-}"
+REPO="${REPO:-}"
+TITLE="${TITLE:-### Generated Terraform Plan}"
+PLAN_TEXT_FILE="${PLAN_TEXT_FILE:-./plan.txt}"
 
 # Declare required commands and the steps needed to install them
 declare -A REQUIRED_COMMANDS
@@ -31,13 +31,34 @@ REQUIRED_COMMANDS["jwt"]="https://github.com/mike-engel/jwt-cli"
 REQUIRED_COMMANDS["gh"]="https://cli.github.com/"
 
 USAGE="
-Usage: $(basename "$0")
+Usage: $(basename "$0") [OPTIONS]
 
-Authenticate gh cli with a GitHub App, or provide a token directly
+Post a Terraform plan to a GitHub Pull Request as a comment.
 
+You need to provide authentication credentials, either a GitHub App (recommended) or a GitHub token.
+\"Secret Name\" refers to a secret in Google Secret Manager (example: sm://my-project/my-github-token). 
+Using [berglas](https://github.com/GoogleCloudPlatform/berglas) to access the secret.
+
+    $(basename "$0") --token-secret-name=sm://my-project/my-github-token
+    $(basename "$0") --app-id=1234 --installation-key-secret-name=sm://my-project/my-installation-key
+
+Those can also be provided as environment variables.
+
+    TOKEN_SECRET_NAME=sm://my-project/my-github-token $(basename "$0")
+    APP_ID=1234 INSTALLATION_KEY_SECRET_NAME=sm://my-project/my-installation-key $(basename "$0")
+
+Additionally you need to provide the PR number, repository.
+Also expects the Terraform plan text output (or error output) to be located at \"$PLAN_TEXT_FILE\").
+You can override this with --plan-text-file (or \$PLAN_TEXT_FILE)
+
+    $(basename "$0") --pr-number=1234 --repo=org/repo 
+    PR_NUMBER=1234 REPO=org/repo $(basename "$0")
+    $(basename "$0") --pr-number=1234 --repo=org/repo --plan-text-file=./other-plan.txt
+    PR_NUMBER=1234 REPO=org/repo PLAN_TEXT_FILE=./other-plan.txt $(basename "$0")
+    
 Examples:
 
-    $(basename "$0") --pr-number=1234 --repo=org/repo --token-secret-name=sm://my-project/my-github-token
+    $(basename "$0") --pr-number=1234 --repo=org/repo --token-secret-name=sm://my-project/my-github-token --plan-text-file=./other-plan.txt
     $(basename "$0") --plan='-chdir=./terraform' --title='My Terraform Plan' --pr-number=1234 --repo=org/repo --token=1234
     $(basename "$0") --pr-number=1234 --repo=org/repo --app-id=1234 --installation-key-secret-name=sm://my-project/my-installation-key
 
@@ -52,7 +73,7 @@ Options:
                                                                (REQUIRED if --app-id is provided, Example: sm://my-project/my-installation-key)
   --pr-number=PR_NUMBER                                        Pull Request number (REQUIRED)
   --repo=REPO                                                  Repository (REQUIRED, Example: org/repo)
-  --plan-text=PLAN                                             Terraform plan text output (or error output)
+  --plan-text-file=PLAN_TEXT_FILE                              Terraform plan text output (or error output) (DEFAULT: \"$PLAN_TEXT_FILE\")
   --title=TITLE                                                Title for the review comment (DEFAULT: \"$TITLE\")
 
 Required commands: ${!REQUIRED_COMMANDS[*]}
@@ -92,8 +113,8 @@ for i in "$@"; do
     TITLE="${i#*=}"
     shift # past argument=value
     ;;
-  --plan-text=*)
-    PLAN_TEXT="${i#*=}"
+  --plan-text-file=*)
+    PLAN_TEXT_FILE="${i#*=}"
     shift # past argument=value
     ;;
   *)
@@ -104,22 +125,30 @@ for i in "$@"; do
   esac
 done
 
+# Validate required arguments
+# ------------------------------------------------------------
+
 declare -A REQUIRED_ARGS=(
   ["REPO"]="--repo"
   ["PR_NUMBER"]="--pr-number"
-  ["PLAN_TEXT"]="--plan-text"
+  ["PLAN_TEXT_FILE"]="--plan-text-file"
 )
 
 for arg in "${!REQUIRED_ARGS[@]}"; do
   if [ -z "${!arg}" ]; then
-    echo -e "${RED}Error: ${REQUIRED_ARGS[$arg]} is required${END}"
+    echo -e "${RED}Error: ${REQUIRED_ARGS[$arg]} (or \$$arg) is required${END}"
+    echo "----------------------------------------"
     echo -e "$USAGE"
     exit 1
   fi
 done
 
-# Require commands
-# ------------------------------------------------------------
+if [ ! -f "$PLAN_TEXT_FILE" ]; then
+  echo -e "${RED}Error: Plan text file \"$PLAN_TEXT_FILE\" does not exist${END}"
+  echo "----------------------------------------"
+  echo -e "$USAGE"
+  exit 1
+fi
 
 for COMMAND in "${!REQUIRED_COMMANDS[@]}"; do
   if ! command -v "$COMMAND" &>/dev/null; then
@@ -137,7 +166,7 @@ if [ "$TOKEN_SECRET_NAME" ]; then
   echo -e "${CYAN}Auth${END} Token Loaded"
 else
   if [ -z "$APP_ID" ]; then
-    echo -e "${RED}Error: --app-id is required when --token-secret-name is not provided${END}"
+    echo -e "${RED}Error: --app-id (or \$APP_ID) is required when --token-secret-name (or \$TOKEN_SECRET_NAME) is not provided${END}"
     echo -e "$USAGE"
     exit 1
   fi
@@ -167,9 +196,9 @@ echo -e "${CYAN}Auth${END} Successful"
 # Terraform plan
 # ------------------------------------------------------------
 
-SUMMARY=$(awk '/^(Error:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT")
+SUMMARY=$(awk '/^(Error:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
 
-DETAILS=$(awk '/^Terraform will perform the following actions/ {flag=1} flag; /(Error:|Plan:|Apply complete!|No changes.|Success)/{flag=0}' "$PLAN_TEXT")
+DETAILS=$(awk '/^Terraform will perform the following actions/ {flag=1} flag; /(Error:|Plan:|Apply complete!|No changes.|Success)/{flag=0}' "$PLAN_TEXT_FILE")
 
 BODY="$TITLE
 

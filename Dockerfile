@@ -1,7 +1,7 @@
 FROM alpine:latest
 
-LABEL org.opencontainers.image.source=https://github.com/ivank/cloudbuild-github-terraform
-LABEL org.opencontainers.image.description="Cloudbuild Github Terraform"
+LABEL org.opencontainers.image.source=https://github.com/ivank/tf-plan-post
+LABEL org.opencontainers.image.description="Terraform Plan Post"
 LABEL org.opencontainers.image.licenses=MIT
  
 ARG BERGLAS_VERSION=2.0.6
@@ -19,6 +19,6 @@ RUN curl --location https://github.com/cli/cli/releases/download/v${GH_VERSION}/
 RUN curl --location https://github.com/mike-engel/jwt-cli/releases/download/${JWT_VERSION}/jwt-linux.tar.gz \
     | tar -xzC /usr/local/bin
     
-COPY entrypoint.bash /builder/entrypoint.bash
+COPY entrypoint.bash /builder/tf-plan-post.sh
 
-ENTRYPOINT ["bash","/builder/entrypoint.bash"]
+ENTRYPOINT ["bash","/builder/tf-plan-post.sh"]
