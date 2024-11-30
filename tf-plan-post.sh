@@ -55,7 +55,7 @@ You can override this with --plan-text-file (or \$PLAN_TEXT_FILE)
     PR_NUMBER=1234 REPO=org/repo $(basename "$0")
     $(basename "$0") --pr-number=1234 --repo=org/repo --plan-text-file=./other-plan.txt
     PR_NUMBER=1234 REPO=org/repo PLAN_TEXT_FILE=./other-plan.txt $(basename "$0")
-    
+
 Examples:
 
     $(basename "$0") --pr-number=1234 --repo=org/repo --token-secret-name=sm://my-project/my-github-token --plan-text-file=./other-plan.txt
@@ -196,9 +196,11 @@ echo -e "${CYAN}Auth${END} Successful"
 # Terraform plan
 # ------------------------------------------------------------
 
-SUMMARY=$(awk '/^(Error:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
+SUMMARY=$(awk '/^(Planning failed:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
 
-DETAILS=$(awk '/^Terraform will perform the following actions/ {flag=1} flag; /(Error:|Plan:|Apply complete!|No changes.|Success)/{flag=0}' "$PLAN_TEXT_FILE")
+SUCCESS_DETAILS=$(awk '/^Terraform will perform the following actions/ {flag=1} flag; /(Error:|Plan:|Apply complete!|No changes.|Success)/{flag=0}' "$PLAN_TEXT_FILE")
+
+ERROR_DETAILS=$(awk '/^Planning failed:$/,0' "$PLAN_TEXT_FILE")
 
 BODY="$TITLE
 
@@ -206,7 +208,7 @@ BODY="$TITLE
 <p><summary>$SUMMARY</summary></p>
 
 \`\`\`hcl
-$DETAILS
+${SUCCESS_DETAILS:-$ERROR_DETAILS}
 \`\`\`
 </details>"
 
