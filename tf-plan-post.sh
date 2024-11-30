@@ -196,15 +196,18 @@ echo -e "${CYAN}Auth${END} Successful"
 # Terraform plan
 # ------------------------------------------------------------
 
-SUMMARY=$(awk '/^(Planning failed:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
+IDENTIFIER="<!-- tf-plan-post.sh -->"
+
+SUMMARY=$(awk '/^(Planning failed.|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
 
 SUCCESS_DETAILS=$(awk '/^Terraform will perform the following actions/ {flag=1} flag; /(Error:|Plan:|Apply complete!|No changes.|Success)/{flag=0}' "$PLAN_TEXT_FILE")
 
-ERROR_DETAILS=$(awk '/^Planning failed:$/,0' "$PLAN_TEXT_FILE")
+ERROR_DETAILS=$(awk '/^Planning failed.$/,0' "$PLAN_TEXT_FILE")
 
 BODY="$TITLE
 
 <details>
+$IDENTIFIER
 <p><summary>$SUMMARY</summary></p>
 
 \`\`\`hcl
@@ -216,7 +219,7 @@ ${SUCCESS_DETAILS:-$ERROR_DETAILS}
 # ------------------------------------------------------------
 echo -e "${CYAN}Comment${END} Searching for existing comment in PR https://github.com/$REPO/pull/$PR_NUMBER"
 
-GENERATED_PLAN_COMMENT_ID=$(gh api "/repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --jq "[.[] | select(.body | startswith(\"$TITLE\")) | .id][0]" || true)
+GENERATED_PLAN_COMMENT_ID=$(gh api "/repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --jq "[.[] | select(.body | contains(\"$IDENTIFIER\")) | .id][0]" || true)
 
 if [ "$GENERATED_PLAN_COMMENT_ID" ]; then
   echo -e "${CYAN}Comment${END} Comment found: https://github.com/$REPO/pull/$PR_NUMBER#issuecomment-$GENERATED_PLAN_COMMENT_ID"
