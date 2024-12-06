@@ -176,9 +176,9 @@ else
   INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY_SECRET_NAME")
   # Convert to a file because jwt cannot load a PEM file as a string
   # https://github.com/mike-engel/jwt-cli/issues/56
-  INSTALLATION_KEY_PATH="$(mktemp -t XXXXX.pem)"
+  INSTALLATION_KEY_PATH="$(tempfile --suffix=.pem)"
   trap 'rm $INSTALLATION_KEY_PATH' EXIT
-  echo "$INSTALLATION_KEY" >"$INSTALLATION_KEY_PATH"
+  echo "$INSTALLATION_KEY" > "$INSTALLATION_KEY_PATH"
 
   JWT=$(jwt encode --secret="@${INSTALLATION_KEY_PATH}" --iss="${APP_ID}" --exp="10 minutes" --alg=RS256)
   AUTH_HEADER="Authorization: Bearer $JWT"
