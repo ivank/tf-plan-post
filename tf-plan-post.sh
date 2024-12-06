@@ -27,7 +27,10 @@ PLAN_TEXT_FILE="${PLAN_TEXT_FILE:-./plan.txt}"
 declare -A REQUIRED_COMMANDS
 
 REQUIRED_COMMANDS["berglas"]="https://github.com/GoogleCloudPlatform/berglas?tab=readme-ov-file#installation"
-REQUIRED_COMMANDS["jwt"]="https://github.com/mike-engel/jwt-cli"
+REQUIRED_COMMANDS["awk"]="https://learnbyexample.github.io/learn_gnuawk/installation-and-documentation.html"
+REQUIRED_COMMANDS["openssl"]="https://openssl.org/"
+REQUIRED_COMMANDS["jq"]="https://jqlang.github.io/jq/download/"
+REQUIRED_COMMANDS["base64"]="https://www.gnu.org/software/coreutils/manual/html_node/base64-invocation.html"
 REQUIRED_COMMANDS["gh"]="https://cli.github.com/"
 
 USAGE="
@@ -174,23 +177,26 @@ else
   echo -e "${CYAN}Auth${END} Loading Installation Key from Google Secret $INSTALLATION_KEY_SECRET_NAME"
 
   INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY_SECRET_NAME")
-  # Convert to a file because jwt cannot load a PEM file as a string
-  # https://github.com/mike-engel/jwt-cli/issues/56
-  INSTALLATION_KEY_PATH_NO_SUFFIX="$(mktemp)"
-  INSTALLATION_KEY_PATH="${INSTALLATION_KEY_PATH_NO_SUFFIX}.pem"
-  mv "$INSTALLATION_KEY_PATH_NO_SUFFIX" "$INSTALLATION_KEY_PATH"
-  echo "$INSTALLATION_KEY" > "$INSTALLATION_KEY_PATH"
 
-  JWT=$(jwt encode --secret="@${INSTALLATION_KEY_PATH}" --iss="${APP_ID}" --exp="10 minutes" --alg=RS256)
-  AUTH_HEADER="Authorization: Bearer $JWT"
+  # JWT
+  # ======
+  NOW=$(date +%s)
+  IAT=$(($NOW - 60))  # Issues 60 seconds in the past
+  EXP=$(($NOW + 600)) # Expires 10 minutes in the future
+
+  HEADER=$(echo -n '{"typ":"JWT","alg":"RS256"}' | base64 -w 0)
+  PAYLOAD=$(echo -n "{\"iat\":${IAT},\"exp\":${EXP},\"iss\":\"${APP_ID}\"}" | base64 -w 0)
+  SIGNATURE=$(openssl dgst -sha256 -sign <(echo -n "$INSTALLATION_KEY") <(echo -n "$HEADER.$PAYLOAD") | base64 -w 0)
+  JWT_HEADER="Authorization: Bearer $HEADER.$PAYLOAD.$SIGNATURE"
 
   if [ -z "$INSTALLATION_ID" ]; then
     echo -e "${CYAN}Auth${END} No Installation Id Provided, loading from GitHub API"
-    INSTALLATION_ID=$(gh api "/app/installations" --header "$AUTH_HEADER" --jq "[.[] | select(.app_id == $APP_ID) | .id][0]")
+    INSTALLATIONS=$(curl --silent --header "$JWT_HEADER" https://api.github.com/app/installations)
+    INSTALLATION_ID=$(echo "$INSTALLATIONS" | jq --raw-output "[.[] | select(.app_id == $APP_ID) | .id][0]")
   fi
 
-  TOKEN=$(gh api "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" --method POST --header "$AUTH_HEADER" --jq ".token")
-  echo -e "${CYAN}Auth${END} Token Loaded"
+  ACCESS_TOKEN=$(curl --silent --request POST --header "$JWT_HEADER" "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
+  TOKEN=$(echo "$ACCESS_TOKEN" | jq --raw-output ".token")
 fi
 
 gh auth login --with-token <<<"$TOKEN"
@@ -227,10 +233,10 @@ echo -e "${CYAN}Comment${END} Searching for existing comment in PR https://githu
 GENERATED_PLAN_COMMENT_ID=$(gh api "/repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --jq "[.[] | select(.body | contains(\"$IDENTIFIER\")) | .id][0]" || true)
 
 if [ "$GENERATED_PLAN_COMMENT_ID" ]; then
-  echo -e "${CYAN}Comment${END} Comment found: https://github.com/$REPO/pull/$PR_NUMBER#issuecomment-$GENERATED_PLAN_COMMENT_ID"
+  echo -e "${CYAN}Comment${END} Existing comment found: https://github.com/$REPO/pull/$PR_NUMBER#issuecomment-$GENERATED_PLAN_COMMENT_ID updating"
   gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
 else
-  echo -e "${CYAN}Comment${END} Creating"
+  echo -e "${CYAN}Comment${END} Existing comment not found, Creating"
   gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --silent --method POST --field body="$BODY"
 fi
 
