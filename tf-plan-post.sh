@@ -176,7 +176,7 @@ else
   INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY_SECRET_NAME")
   # Convert to a file because jwt cannot load a PEM file as a string
   # https://github.com/mike-engel/jwt-cli/issues/56
-  INSTALLATION_KEY_PATH="$(mktemp XXXXX.pem)"
+  INSTALLATION_KEY_PATH="$(mktemp -t XXXXX.pem)"
   trap 'rm $INSTALLATION_KEY_PATH' EXIT
   echo "$INSTALLATION_KEY" >"$INSTALLATION_KEY_PATH"
 
