@@ -1,0 +1,8 @@
+
+Error: Reference to undeclared input variable
+
+  on main.tf line 2, in resource "local_file" "foo":
+   2:   content  = var.foo_content
+
+An input variable with the name "foo_content" has not been declared. This
+variable can be declared with a variable "foo_content" {} block.

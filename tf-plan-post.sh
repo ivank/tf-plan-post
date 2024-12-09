@@ -1,19 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Stop script on error
 set -e
 
-# Set output colors (or don't use colors if NO_COLOR=true is set)
-if [ -z "$NO_COLOR" ]; then
-  RED='\033[0;31m'
-  CYAN='\033[0;36m'
-  END='\033[0m'
-else
-  RED=''
-  CYAN=''
-  END=''
-fi
-
+# Defaults of all variables
+# We set them first, as they are used in the help message
+NO_COLOR="${NO_COLOR:-}"
 INSTALLATION_ID="${INSTALLATION_ID:-}"
 TOKEN_SECRET_NAME="${TOKEN_SECRET_NAME:-}"
 APP_ID="${APP_ID:-}"
@@ -22,6 +14,32 @@ PR_NUMBER="${PR_NUMBER:-}"
 REPO="${REPO:-}"
 TITLE="${TITLE:-### Generated Terraform Plan}"
 PLAN_TEXT_FILE="${PLAN_TEXT_FILE:-./plan.txt}"
+DRY_RUN="${DRY_RUN:-false}"
+
+# Load NO_COLOR first
+# Because all the rest would use the color markers
+for i in "$@"; do
+	case $i in
+	--no-color)
+		NO_COLOR=true
+		;;
+	esac
+done
+
+# Set output colors (or don't use colors if NO_COLOR=true is set)
+if [ -z "$NO_COLOR" ]; then
+	RED='\033[0;31m'
+	CYAN='\033[0;36m'
+	GREEN='\033[0;32m'
+	PINK='\033[0;35m'
+	END='\033[0m'
+else
+	RED=''
+	CYAN=''
+	GREEN=''
+	PINK=''
+	END=''
+fi
 
 # Declare required commands and the steps needed to install them
 declare -A REQUIRED_COMMANDS
@@ -33,211 +51,235 @@ REQUIRED_COMMANDS["jq"]="https://jqlang.github.io/jq/download/"
 REQUIRED_COMMANDS["base64"]="https://www.gnu.org/software/coreutils/manual/html_node/base64-invocation.html"
 REQUIRED_COMMANDS["gh"]="https://cli.github.com/"
 
+error() {
+	ERROR="
+${RED}ERROR:${END} $1
+
+Usage: ${CYAN}$(basename "$0")${END} ${PINK}--help${END}
+"
+	echo -e "${ERROR}" >&2
+	exit 1
+}
+
 USAGE="
-Usage: $(basename "$0") [OPTIONS]
+Usage: ${CYAN}$(basename "$0")${END} [OPTIONS]
 
 Post a Terraform plan to a GitHub Pull Request as a comment.
 
 You need to provide authentication credentials, either a GitHub App (recommended) or a GitHub token.
-\"Secret Name\" refers to a secret in Google Secret Manager (example: sm://my-project/my-github-token). 
+\"Secret Name\" refers to a secret in Google Secret Manager (example: sm://my-project/my-github-token).
 Using [berglas](https://github.com/GoogleCloudPlatform/berglas) to access the secret.
 
-    $(basename "$0") --token-secret-name=sm://my-project/my-github-token
-    $(basename "$0") --app-id=1234 --installation-key-secret-name=sm://my-project/my-installation-key
+    ${CYAN}$(basename "$0")${END} ${PINK}--token-secret-name${END}=sm://my-project/my-github-token
+    ${CYAN}$(basename "$0")${END} ${PINK}--app-id${END}=1234 ${PINK}--installation-key-secret-name${END}=sm://my-project/my-installation-key
 
 Those can also be provided as environment variables.
 
-    TOKEN_SECRET_NAME=sm://my-project/my-github-token $(basename "$0")
-    APP_ID=1234 INSTALLATION_KEY_SECRET_NAME=sm://my-project/my-installation-key $(basename "$0")
+    ${GREEN}TOKEN_SECRET_NAME${END}=sm://my-project/my-github-token ${CYAN}$(basename "$0")${END}
+    ${GREEN}APP_ID${END}=1234 ${GREEN}INSTALLATION_KEY_SECRET_NAME${END}=sm://my-project/my-installation-key ${CYAN}$(basename "$0")${END}
 
 Additionally you need to provide the PR number, repository.
-Also expects the Terraform plan text output (or error output) to be located at \"$PLAN_TEXT_FILE\").
-You can override this with --plan-text-file (or \$PLAN_TEXT_FILE)
+Also expects the Terraform plan text output (or error output) to be located at \"$PLAN_TEXT_FILE\".
+You can override this with ${PINK}--plan-text-file${END} (or ${GREEN}\$PLAN_TEXT_FILE${END})
 
-    $(basename "$0") --pr-number=1234 --repo=org/repo 
-    PR_NUMBER=1234 REPO=org/repo $(basename "$0")
-    $(basename "$0") --pr-number=1234 --repo=org/repo --plan-text-file=./other-plan.txt
-    PR_NUMBER=1234 REPO=org/repo PLAN_TEXT_FILE=./other-plan.txt $(basename "$0")
+    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo
+    ${GREEN}PR_NUMBER${END}=1234 ${GREEN}REPO${END}=org/repo ${CYAN}$(basename "$0")${END}
+    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--plan-text-file${END}=./other-plan.txt
+    ${GREEN}PR_NUMBER${END}=1234 ${GREEN}REPO${END}=org/repo ${GREEN}PLAN_TEXT_FILE${END}=./other-plan.txt ${CYAN}$(basename "$0")${END}
 
 Examples:
 
-    $(basename "$0") --pr-number=1234 --repo=org/repo --token-secret-name=sm://my-project/my-github-token --plan-text-file=./other-plan.txt
-    $(basename "$0") --plan='-chdir=./terraform' --title='My Terraform Plan' --pr-number=1234 --repo=org/repo --token=1234
-    $(basename "$0") --pr-number=1234 --repo=org/repo --app-id=1234 --installation-key-secret-name=sm://my-project/my-installation-key
+    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--token-secret-name${END}=sm://my-project/my-github-token ${PINK}--plan-text-file${END}=./other-plan.txt
+    ${CYAN}$(basename "$0")${END} ${PINK}--plan${END}='-chdir=./terraform' ${PINK}--title${END}='My Terraform Plan' ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--token${END}=1234
+    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--app-id${END}=1234 ${PINK}--installation-key-secret-name${END}=sm://my-project/my-installation-key
 
 Options:
-  --help                                                       Show this message
-  --token-secret-name=TOKEN_SECRET_NAME                        Google secret manager name of the GitHub token
-                                                               (Example: sm://my-project/my-github-token)
-  --app-id=APP_ID                                              Github App ID
-                                                               (REQUIRED if --token-secret-name is not provided, needs --installation-key-secret-name)
-  --installation-id=INSTALLATION_ID                            Installation id, if not provided, it will be fetched from the GitHub API
-  --installation-key-secret-name=INSTALLATION_KEY_SECRET_NAME  Installation key saved in Google Secret Manager
-                                                               (REQUIRED if --app-id is provided, Example: sm://my-project/my-installation-key)
-  --pr-number=PR_NUMBER                                        Pull Request number (REQUIRED)
-  --repo=REPO                                                  Repository (REQUIRED, Example: org/repo)
-  --plan-text-file=PLAN_TEXT_FILE                              Terraform plan text output (or error output) (DEFAULT: \"$PLAN_TEXT_FILE\")
-  --title=TITLE                                                Title for the review comment (DEFAULT: \"$TITLE\")
+  ${PINK}--help${END}                                 Show this message
+  ${PINK}--token-secret-name${END}=value              Google secret manager name of the GitHub token (or ENV: ${GREEN}\$TOKEN_SECRET_NAME${END})
+  ${PINK}${END}                                       ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key-secret-name${END} are provided, Example: sm://my-project/my-github-token
+  ${PINK}--app-id${END}=value                         Github App ID (or ENV: ${GREEN}\$APP_ID${END})
+  ${PINK}${END}                                       ${RED}REQUIRED${END} if ${CYAN}--token-secret-name${END} is not provided, needs ${CYAN}--installation-key-secret-name${END}
+  ${PINK}--installation-id${END}=value                Installation id, if not provided, it will be fetched from the GitHub API (or ENV: ${GREEN}\$INSTALLATION_ID${END})
+  ${PINK}--installation-key-secret-name${END}=value   Installation key saved in Google Secret Manager (or ENV: ${GREEN}\$INSTALLATION_KEY_SECRET_NAME${END})
+  ${PINK}${END}                                       ${RED}REQUIRED${END} if ${CYAN}--app-id${END} is provided, Example: sm://my-project/my-installation-key)
+  ${PINK}--pr-number${END}=value                      ${RED}REQUIRED${END} Pull Request number (or ENV: ${GREEN}\$PR_NUMBER${END})
+  ${PINK}--repo${END}=value                           ${RED}REQUIRED${END} Repository, Example: org/repo (or ENV ${GREEN}\$REPO${END})
+  ${PINK}--plan-text-file${END}=value                 Terraform plan text output (or error output) (DEFAULT: \"${CYAN}$PLAN_TEXT_FILE${END}\", or ENV: ${GREEN}\$PLAN_TEXT_FILE${END})
+  ${PINK}--title${END}=value                          Title for the review comment (DEFAULT: \"${CYAN}$TITLE${END}\", or ENV: ${GREEN}\$TITLE${END})
+  ${PINK}--dry-run${END}                              Output the contents of the comment instead of sending it to GitHub
+  ${PINK}--no-color${END}                             Disable color output (or ENV: ${GREEN}\$NO_COLOR${END})
 
-Required commands: ${!REQUIRED_COMMANDS[*]}
+Required commands: ${RED}${!REQUIRED_COMMANDS[*]}${END}
 "
 
 for i in "$@"; do
-  case $i in
-  --help)
-    echo -e "$USAGE"
-    exit 0
-    ;;
-  --installation-id=*)
-    INSTALLATION_ID="${i#*=}"
-    shift # past argument=value
-    ;;
-  --token-secret-name=*)
-    TOKEN_SECRET_NAME="${i#*=}"
-    shift # past argument=value
-    ;;
-  --app-id=*)
-    APP_ID="${i#*=}"
-    shift # past argument=value
-    ;;
-  --installation-key-secret-name=*)
-    INSTALLATION_KEY_SECRET_NAME="${i#*=}"
-    shift # past argument=value
-    ;;
-  --repo=*)
-    REPO="${i#*=}"
-    shift # past argument=value
-    ;;
-  --pr-number=*)
-    PR_NUMBER="${i#*=}"
-    shift # past argument=value
-    ;;
-  --title=*)
-    TITLE="${i#*=}"
-    shift # past argument=value
-    ;;
-  --plan-text-file=*)
-    PLAN_TEXT_FILE="${i#*=}"
-    shift # past argument=value
-    ;;
-  *)
-    echo "Unknown option $i"
-    echo -e "$USAGE"
-    exit 1
-    ;;
-  esac
+	case $i in
+	--help)
+		echo -e "$USAGE"
+		exit 0
+		;;
+	--installation-id=*)
+		INSTALLATION_ID="${i#*=}"
+		shift
+		;;
+	--token-secret-name=*)
+		TOKEN_SECRET_NAME="${i#*=}"
+		shift
+		;;
+	--app-id=*)
+		APP_ID="${i#*=}"
+		shift
+		;;
+	--installation-key-secret-name=*)
+		INSTALLATION_KEY_SECRET_NAME="${i#*=}"
+		shift
+		;;
+	--repo=*)
+		REPO="${i#*=}"
+		shift
+		;;
+	--pr-number=*)
+		PR_NUMBER="${i#*=}"
+		shift
+		;;
+	--title=*)
+		TITLE="${i#*=}"
+		shift
+		;;
+	--plan-text-file=*)
+		PLAN_TEXT_FILE="${i#*=}"
+		shift
+		;;
+	--dry-run)
+		DRY_RUN=true
+		shift
+		;;
+	--no-color)
+		shift
+		;;
+	*)
+		error "Unknown option ${PINK}$i${END}"
+		;;
+	esac
 done
 
 # Validate required arguments
 # ------------------------------------------------------------
 
 declare -A REQUIRED_ARGS=(
-  ["REPO"]="--repo"
-  ["PR_NUMBER"]="--pr-number"
-  ["PLAN_TEXT_FILE"]="--plan-text-file"
+	["REPO"]="--repo"
+	["PR_NUMBER"]="--pr-number"
+	["PLAN_TEXT_FILE"]="--plan-text-file"
 )
 
 for arg in "${!REQUIRED_ARGS[@]}"; do
-  if [ -z "${!arg}" ]; then
-    echo -e "${RED}Error: ${REQUIRED_ARGS[$arg]} (or \$$arg) is required${END}"
-    echo "----------------------------------------"
-    echo -e "$USAGE"
-    exit 1
-  fi
+	if [ -z "${!arg}" ]; then
+		error "${PINK}${REQUIRED_ARGS[$arg]}${END} (or ${GREEN}\$$arg${END}) is required"
+	fi
 done
 
 if [ ! -f "$PLAN_TEXT_FILE" ]; then
-  echo -e "${RED}Error: Plan text file \"$PLAN_TEXT_FILE\" does not exist${END}"
-  echo "----------------------------------------"
-  echo -e "$USAGE"
-  exit 1
+	error "Plan text file \"$PLAN_TEXT_FILE\" does not exist. If the file is in a different location, you can set it with ${PINK}--plan-text-file${END} or ${GREEN}\$PLAN_TEXT_FILE${END}"
 fi
 
 for COMMAND in "${!REQUIRED_COMMANDS[@]}"; do
-  if ! command -v "$COMMAND" &>/dev/null; then
-    echo -e "${RED}Error: $COMMAND needs to be installed. ${REQUIRED_COMMANDS[$COMMAND]}${END}"
-    exit 1
-  fi
+	if ! command -v "$COMMAND" &>/dev/null; then
+		error "$COMMAND needs to be installed. ${REQUIRED_COMMANDS[$COMMAND]}"
+	fi
 done
 
 # Authenticate
 # ------------------------------------------------------------
 
-if [ "$TOKEN_SECRET_NAME" ]; then
-  echo -e "${CYAN}Auth${END} Loading Token from Google Secret $TOKEN_SECRET_NAME"
-  TOKEN=$(berglas access "$TOKEN_SECRET_NAME")
-  echo -e "${CYAN}Auth${END} Token Loaded"
+if [ "$DRY_RUN" = true ]; then
+	echo -e "${CYAN}Auth${END}: ${RED}DRY RUN${END} Skipping authentication"
 else
-  if [ -z "$APP_ID" ]; then
-    echo -e "${RED}Error: --app-id (or \$APP_ID) is required when --token-secret-name (or \$TOKEN_SECRET_NAME) is not provided${END}"
-    echo -e "$USAGE"
-    exit 1
-  fi
+	if [ "$TOKEN_SECRET_NAME" ]; then
+		echo -e "${CYAN}Auth${END} Loading Token from Google Secret $TOKEN_SECRET_NAME"
+		TOKEN=$(berglas access "$TOKEN_SECRET_NAME")
+		echo -e "${CYAN}Auth${END} Token Loaded"
+	else
+		if [ -z "$APP_ID" ]; then
+			error "${PINK}--app-id${END} (or ${GREEN}\$APP_ID${END}) is required when ${PINK}--token-secret-name${END} (or ${GREEN}\$TOKEN_SECRET_NAME${END}) is not provided"
+		fi
 
-  echo -e "${CYAN}Auth${END} Loading Installation Key from Google Secret $INSTALLATION_KEY_SECRET_NAME"
+		if [ -z "$INSTALLATION_KEY_SECRET_NAME" ]; then
+			error "${PINK}--installation-key-secret-name${END} (or ${GREEN}\$INSTALLATION_KEY_SECRET_NAME${END}) is required when ${PINK}--app-id${END} (or ${GREEN}\$APP_ID${END}) is provided"
+		fi
 
-  INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY_SECRET_NAME")
+		echo -e "${CYAN}Auth${END} Loading Installation Key from Google Secret $INSTALLATION_KEY_SECRET_NAME"
 
-  # JWT
-  # ======
-  NOW=$(date +%s)
-  IAT=$(($NOW - 60))  # Issues 60 seconds in the past
-  EXP=$(($NOW + 600)) # Expires 10 minutes in the future
+		INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY_SECRET_NAME")
 
-  HEADER=$(echo -n '{"typ":"JWT","alg":"RS256"}' | base64 -w 0)
-  PAYLOAD=$(echo -n "{\"iat\":${IAT},\"exp\":${EXP},\"iss\":\"${APP_ID}\"}" | base64 -w 0)
-  SIGNATURE=$(openssl dgst -sha256 -sign <(echo -n "$INSTALLATION_KEY") <(echo -n "$HEADER.$PAYLOAD") | base64 -w 0)
-  JWT_HEADER="Authorization: Bearer $HEADER.$PAYLOAD.$SIGNATURE"
+		# JWT
+		# ======
+		NOW=$(date +%s)
+		IAT=$((NOW - 60))  # Issues 60 seconds in the past
+		EXP=$((NOW + 600)) # Expires 10 minutes in the future
 
-  if [ -z "$INSTALLATION_ID" ]; then
-    echo -e "${CYAN}Auth${END} No Installation Id Provided, loading from GitHub API"
-    INSTALLATIONS=$(curl --silent --header "$JWT_HEADER" https://api.github.com/app/installations)
-    INSTALLATION_ID=$(echo "$INSTALLATIONS" | jq --raw-output "[.[] | select(.app_id == $APP_ID) | .id][0]")
-  fi
+		HEADER=$(echo -n '{"typ":"JWT","alg":"RS256"}' | base64 -w 0)
+		PAYLOAD=$(echo -n "{\"iat\":${IAT},\"exp\":${EXP},\"iss\":\"${APP_ID}\"}" | base64 -w 0)
+		SIGNATURE=$(openssl dgst -sha256 -sign <(echo -n "$INSTALLATION_KEY") <(echo -n "$HEADER.$PAYLOAD") | base64 -w 0)
+		JWT_HEADER="Authorization: Bearer $HEADER.$PAYLOAD.$SIGNATURE"
 
-  ACCESS_TOKEN=$(curl --silent --request POST --header "$JWT_HEADER" "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
-  TOKEN=$(echo "$ACCESS_TOKEN" | jq --raw-output ".token")
+		if [ -z "$INSTALLATION_ID" ]; then
+			echo -e "${CYAN}Auth${END} No Installation Id Provided, loading from GitHub API"
+			INSTALLATIONS=$(curl --silent --header "$JWT_HEADER" https://api.github.com/app/installations)
+			INSTALLATION_ID=$(echo "$INSTALLATIONS" | jq --raw-output "[.[] | select(.app_id == $APP_ID) | .id][0]")
+		fi
+
+		ACCESS_TOKEN=$(curl --silent --request POST --header "$JWT_HEADER" "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
+		TOKEN=$(echo "$ACCESS_TOKEN" | jq --raw-output ".token")
+	fi
+	gh auth login --with-token <<<"$TOKEN"
+	echo -e "${CYAN}Auth${END} Successful"
 fi
-
-gh auth login --with-token <<<"$TOKEN"
-echo -e "${CYAN}Auth${END} Successful"
 
 # Terraform plan
 # ------------------------------------------------------------
 
 IDENTIFIER="<!-- tf-plan-post.sh -->"
 
-SUMMARY=$(awk '/^(Planning failed.|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
+SUMMARY=$(awk '/^(Error:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
 
 DETAILS=$(awk '/^Terraform will perform the following actions/ {flag=1} flag; /(Error:|Plan:|Apply complete!|No changes.|Success)/{flag=0}' "$PLAN_TEXT_FILE")
 
 if [ -z "$DETAILS" ]; then
-  DETAILS=$(awk '/^Planning failed./,0' "$PLAN_TEXT_FILE")
+	DETAILS=$(awk '/^Error:/,0' "$PLAN_TEXT_FILE")
 fi
 
-BODY="$TITLE
+BODY=$(
+	cat <<-EOL
+		$TITLE
 
-<details>
-$IDENTIFIER
-<p><summary>$SUMMARY</summary></p>
+		<details>
+		$IDENTIFIER
+		<p><summary>$SUMMARY</summary></p>
 
-\`\`\`hcl
-$DETAILS
-\`\`\`
-</details>"
+		\`\`\`hcl
+		$DETAILS
+		\`\`\`
+		</details>
+	EOL
+)
 
-# Create or update the comment
-# ------------------------------------------------------------
-echo -e "${CYAN}Comment${END} Searching for existing comment in PR https://github.com/$REPO/pull/$PR_NUMBER"
-
-GENERATED_PLAN_COMMENT_ID=$(gh api "/repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --jq "[.[] | select(.body | contains(\"$IDENTIFIER\")) | .id][0]" || true)
-
-if [ "$GENERATED_PLAN_COMMENT_ID" ]; then
-  echo -e "${CYAN}Comment${END} Existing comment found: https://github.com/$REPO/pull/$PR_NUMBER#issuecomment-$GENERATED_PLAN_COMMENT_ID updating"
-  gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
+if [ "$DRY_RUN" = true ]; then
+	echo -e "${CYAN}Comment${END}: ${RED}DRY RUN${END} Outputting comment"
+	echo -e "$BODY"
 else
-  echo -e "${CYAN}Comment${END} Existing comment not found, Creating"
-  gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --silent --method POST --field body="$BODY"
-fi
+	# Create or update the comment
+	# ------------------------------------------------------------
+	echo -e "${CYAN}Comment${END} Searching for existing comment in PR https://github.com/$REPO/pull/$PR_NUMBER"
 
-echo -e "${CYAN}Comment${END} Successful"
+	GENERATED_PLAN_COMMENT_ID=$(gh api "/repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --jq "[.[] | select(.body | contains(\"$IDENTIFIER\")) | .id][0]" || true)
+
+	if [ "$GENERATED_PLAN_COMMENT_ID" ]; then
+		echo -e "${CYAN}Comment${END} Existing comment found: https://github.com/$REPO/pull/$PR_NUMBER#issuecomment-$GENERATED_PLAN_COMMENT_ID updating"
+		gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
+	else
+		echo -e "${CYAN}Comment${END} Existing comment not found, Creating"
+		gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --silent --method POST --field body="$BODY"
+	fi
+
+	echo -e "${CYAN}Comment${END} Successful"
+fi

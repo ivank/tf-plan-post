@@ -1,0 +1,14 @@
+data.local_file.missing_file: Reading...
+
+Planning failed. Terraform encountered an error while generating this plan.
+
+
+Error: Read local file data source error
+
+  with data.local_file.missing_file,
+  on main.tf line 1, in data "local_file" "missing_file":
+   1: data "local_file" "missing_file" {
+
+The file at given path cannot be read.
+
++Original Error: open ./missing_file.bar: no such file or directory
