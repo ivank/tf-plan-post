@@ -258,17 +258,31 @@ SUMMARY=$(awk '/^(Error:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} E
 
 DETAILS=$(awk '/^Terraform will perform the following actions/ {flag=1} flag; /(Error:|Plan:|Apply complete!|No changes.|Success)/{flag=0}' "$PLAN_TEXT_FILE")
 
+if [[ $SUMMARY =~ "Error" ]]; then
+	NOTICE="CAUTION"
+elif [[ $SUMMARY =~ "Plan" ]]; then
+	NOTICE="IMPORTANT"
+elif [[ $SUMMARY =~ "Success" || $SUMMARY =~ "Apply complete!" ]]; then
+	NOTICE="TIP"
+elif [[ $SUMMARY =~ "No changes" ]]; then
+	NOTICE="NOTE"
+else
+	NOTICE="WARNING"
+fi
+
 if [ -z "$DETAILS" ]; then
 	DETAILS=$(awk '/^Error:/,0' "$PLAN_TEXT_FILE")
 fi
 
 BODY=$(
 	cat <<-EOL
-		$TITLE
+		> [!$NOTICE]
+		> $TITLE
+		> $SUMMARY
 
 		<details>
 		$IDENTIFIER
-		<p><summary>$SUMMARY</summary></p>
+		<p><summary>Terraform Plan Details</summary></p>
 
 		\`\`\`hcl
 		$DETAILS

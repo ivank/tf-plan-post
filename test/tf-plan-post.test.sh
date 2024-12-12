@@ -95,11 +95,13 @@ test_dry_run_custom_identifier_success() {
 		cat <<-"EOF"
 			Auth: DRY RUN Skipping authentication
 			Comment: DRY RUN Outputting comment
-			### Generated Terraform Plan
+			> [!IMPORTANT]
+			> ### Generated Terraform Plan
+			> Plan: 1 to add, 0 to change, 0 to destroy.
 
 			<details>
 			<!-- something -->
-			<p><summary>Plan: 1 to add, 0 to change, 0 to destroy.</summary></p>
+			<p><summary>Terraform Plan Details</summary></p>
 
 			```hcl
 			Terraform will perform the following actions:
@@ -137,11 +139,13 @@ test_dry_run_success() {
 		cat <<-"EOF"
 			Auth: DRY RUN Skipping authentication
 			Comment: DRY RUN Outputting comment
-			### Generated Terraform Plan
+			> [!IMPORTANT]
+			> ### Generated Terraform Plan
+			> Plan: 1 to add, 0 to change, 0 to destroy.
 
 			<details>
 			<!-- tf-plan-post.sh -->
-			<p><summary>Plan: 1 to add, 0 to change, 0 to destroy.</summary></p>
+			<p><summary>Terraform Plan Details</summary></p>
 
 			```hcl
 			Terraform will perform the following actions:
@@ -178,11 +182,13 @@ test_dry_run_error() {
 		cat <<-"EOF"
 			Auth: DRY RUN Skipping authentication
 			Comment: DRY RUN Outputting comment
-			### Generated Terraform Plan
+			> [!CAUTION]
+			> ### Generated Terraform Plan
+			> Error: Reference to undeclared input variable
 
 			<details>
 			<!-- tf-plan-post.sh -->
-			<p><summary>Error: Reference to undeclared input variable</summary></p>
+			<p><summary>Terraform Plan Details</summary></p>
 
 			```hcl
 			Error: Reference to undeclared input variable
@@ -192,6 +198,31 @@ test_dry_run_error() {
 
 			An input variable with the name "foo_content" has not been declared. This
 			variable can be declared with a variable "foo_content" {} block.
+			```
+			</details>
+		EOF
+	)
+	assertEquals "Should not return error" "$RETURN" 0
+	assertEquals "Should have output" "$OUT" "$EXPECTED"
+	assertNull "Should not have error" "$ERR"
+}
+
+test_dry_run_no_changes() {
+	run --no-color --repo="owner/repo" --pr-number=1 --plan-text-file="./test/terraform/no-changes/plan.txt" --token-secret-name="..." --dry-run
+	EXPECTED=$(
+		cat <<-"EOF"
+			Auth: DRY RUN Skipping authentication
+			Comment: DRY RUN Outputting comment
+			> [!NOTE]
+			> ### Generated Terraform Plan
+			> No changes. Your infrastructure matches the configuration.
+
+			<details>
+			<!-- tf-plan-post.sh -->
+			<p><summary>Terraform Plan Details</summary></p>
+
+			```hcl
+
 			```
 			</details>
 		EOF
