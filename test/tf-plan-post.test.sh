@@ -88,6 +88,48 @@ test_wrong_pr_number() {
 	assertNull "Should not have output" "$OUT"
 }
 
+test_dry_run_custom_identifier_success() {
+	run --no-color --repo="owner/repo" --pr-number=1 --plan-text-file="./test/terraform/success/plan.txt" --token-secret-name="..." --identifier="<!-- something -->" --dry-run
+
+	EXPECTED=$(
+		cat <<-"EOF"
+			Auth: DRY RUN Skipping authentication
+			Comment: DRY RUN Outputting comment
+			### Generated Terraform Plan
+
+			<details>
+			<!-- something -->
+			<p><summary>Plan: 1 to add, 0 to change, 0 to destroy.</summary></p>
+
+			```hcl
+			Terraform will perform the following actions:
+
+			  # local_file.foo will be created
+			  + resource "local_file" "foo" {
+			      + content              = "foo!"
+			      + content_base64sha256 = (known after apply)
+			      + content_base64sha512 = (known after apply)
+			      + content_md5          = (known after apply)
+			      + content_sha1         = (known after apply)
+			      + content_sha256       = (known after apply)
+			      + content_sha512       = (known after apply)
+			      + directory_permission = "0777"
+			      + file_permission      = "0777"
+			      + filename             = "./foo.bar"
+			      + id                   = (known after apply)
+			    }
+
+			Plan: 1 to add, 0 to change, 0 to destroy.
+			```
+			</details>
+		EOF
+	)
+
+	assertEquals "Should not return error" "$RETURN" 0
+	assertEquals "Should have output" "$OUT" "$EXPECTED"
+	assertNull "Should not have error" "$ERR"
+}
+
 test_dry_run_success() {
 	run --no-color --repo="owner/repo" --pr-number=1 --plan-text-file="./test/terraform/success/plan.txt" --token-secret-name="..." --dry-run
 

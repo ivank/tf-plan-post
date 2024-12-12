@@ -15,6 +15,7 @@ REPO="${REPO:-}"
 TITLE="${TITLE:-### Generated Terraform Plan}"
 PLAN_TEXT_FILE="${PLAN_TEXT_FILE:-./plan.txt}"
 DRY_RUN="${DRY_RUN:-false}"
+IDENTIFIER="${IDENTIFIER:-<!-- tf-plan-post.sh -->}"
 
 # Load NO_COLOR first
 # Because all the rest would use the color markers
@@ -94,6 +95,7 @@ Examples:
     ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--app-id${END}=1234 ${PINK}--installation-key-secret-name${END}=sm://my-project/my-installation-key
 
 Options:
+
   ${PINK}--help${END}                                 Show this message
   ${PINK}--token-secret-name${END}=value              Google secret manager name of the GitHub token (or ENV: ${GREEN}\$TOKEN_SECRET_NAME${END})
   ${PINK}${END}                                       ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key-secret-name${END} are provided, Example: sm://my-project/my-github-token
@@ -107,6 +109,7 @@ Options:
   ${PINK}--plan-text-file${END}=value                 Terraform plan text output (or error output) (DEFAULT: \"${CYAN}$PLAN_TEXT_FILE${END}\", or ENV: ${GREEN}\$PLAN_TEXT_FILE${END})
   ${PINK}--title${END}=value                          Title for the review comment (DEFAULT: \"${CYAN}$TITLE${END}\", or ENV: ${GREEN}\$TITLE${END})
   ${PINK}--dry-run${END}                              Output the contents of the comment instead of sending it to GitHub
+  ${PINK}--identifier${END}                           Identify the tf-plan-post's comment with this text (DEFAULT: \"$IDENTIFIER\", or ENV: ${GREEN}\$IDENTIFIER${END})
   ${PINK}--no-color${END}                             Disable color output (or ENV: ${GREEN}\$NO_COLOR${END})
 
 Required commands: ${RED}${!REQUIRED_COMMANDS[*]}${END}
@@ -144,6 +147,10 @@ for i in "$@"; do
 		;;
 	--title=*)
 		TITLE="${i#*=}"
+		shift
+		;;
+	--identifier=*)
+		IDENTIFIER="${i#*=}"
 		shift
 		;;
 	--plan-text-file=*)
@@ -246,8 +253,6 @@ fi
 
 # Terraform plan
 # ------------------------------------------------------------
-
-IDENTIFIER="<!-- tf-plan-post.sh -->"
 
 SUMMARY=$(awk '/^(Error:|Plan:|Apply complete!|No changes.|Success)/ {line=$0} END {if (line) print line; else print "View output."}' "$PLAN_TEXT_FILE")
 
