@@ -295,7 +295,9 @@ else
 		gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
 	else
 		echo -e "${CYAN}Comment${END} Existing comment not found, Creating"
-		gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --silent --method POST --field body="$BODY"
+		set +e
+		gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --method POST --field body="$BODY"
+		set -e
 	fi
 
 	echo -e "${CYAN}Comment${END} Successful"
