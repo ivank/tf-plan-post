@@ -64,6 +64,30 @@ test_missing_installation_key() {
 	assertNull "Should not have output" "$OUT"
 }
 
+test_wrong_repo() {
+	run --no-color --repo="&&!" --pr-number=1 --plan-text-file="./test/terraform/success/plan.txt" --token-secret-name="..." --dry-run
+
+	assertEquals "Should return error" "$RETURN" 1
+	assertContains "Should have error" "$ERR" "ERROR: Repository name '&&!' doesn't seem to be valid, it must be org/repo-name format"
+	assertNull "Should not have output" "$OUT"
+}
+
+test_no_org_in_repo() {
+	run --no-color --repo="repo" --pr-number=1 --plan-text-file="./test/terraform/success/plan.txt" --token-secret-name="..." --dry-run
+
+	assertEquals "Should return error" "$RETURN" 1
+	assertContains "Should have error" "$ERR" "ERROR: Repository name 'repo' doesn't seem to be valid, it must be org/repo-name format"
+	assertNull "Should not have output" "$OUT"
+}
+
+test_wrong_pr_number() {
+	run --no-color --repo="owner/repo" --pr-number=test --plan-text-file="./test/terraform/success/plan.txt" --token-secret-name="..." --dry-run
+
+	assertEquals "Should return error" "$RETURN" 1
+	assertContains "Should have error" "$ERR" "ERROR: pr number 'test' must be an integer number"
+	assertNull "Should not have output" "$OUT"
+}
+
 test_dry_run_success() {
 	run --no-color --repo="owner/repo" --pr-number=1 --plan-text-file="./test/terraform/success/plan.txt" --token-secret-name="..." --dry-run
 

@@ -182,6 +182,14 @@ if [ ! -f "$PLAN_TEXT_FILE" ]; then
 	error "Plan text file \"$PLAN_TEXT_FILE\" does not exist. If the file is in a different location, you can set it with ${PINK}--plan-text-file${END} or ${GREEN}\$PLAN_TEXT_FILE${END}"
 fi
 
+if ! [[ "$REPO" =~ ^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$ ]]; then
+	error "Repository name '$REPO' doesn't seem to be valid, it must be org/repo-name format"
+fi
+
+if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+	error "pr number '$PR_NUMBER' must be an integer number"
+fi
+
 for COMMAND in "${!REQUIRED_COMMANDS[@]}"; do
 	if ! command -v "$COMMAND" &>/dev/null; then
 		error "$COMMAND needs to be installed. ${REQUIRED_COMMANDS[$COMMAND]}"
@@ -226,6 +234,7 @@ else
 			echo -e "${CYAN}Auth${END} No Installation Id Provided, loading from GitHub API"
 			INSTALLATIONS=$(curl --silent --header "$JWT_HEADER" https://api.github.com/app/installations)
 			INSTALLATION_ID=$(echo "$INSTALLATIONS" | jq --raw-output "[.[] | select(.app_id == $APP_ID) | .id][0]")
+			echo -e "${CYAN}Auth${END} Using $INSTALLATION_ID (for APP $APP_ID)"
 		fi
 
 		ACCESS_TOKEN=$(curl --silent --request POST --header "$JWT_HEADER" "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
@@ -271,9 +280,12 @@ else
 	# ------------------------------------------------------------
 	echo -e "${CYAN}Comment${END} Searching for existing comment in PR https://github.com/$REPO/pull/$PR_NUMBER"
 
-	GENERATED_PLAN_COMMENT_ID=$(gh api "/repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --jq "[.[] | select(.body | contains(\"$IDENTIFIER\")) | .id][0]" || true)
+	set +e
+	GENERATED_PLAN_COMMENT_ID=$(gh api "/repos/$REPO/issues/$PR_NUMBER/comments?per_page=100" --jq "[.[] | select(.body | contains(\"$IDENTIFIER\")) | .id][0]")
+	GENERATED_PLAN_COMMENT_ID_EXIT_CODE=$?
+	set -e
 
-	if [ "$GENERATED_PLAN_COMMENT_ID" ]; then
+	if [[ "$GENERATED_PLAN_COMMENT_ID_EXIT_CODE" -eq 0 && "$GENERATED_PLAN_COMMENT_ID" ]]; then
 		echo -e "${CYAN}Comment${END} Existing comment found: https://github.com/$REPO/pull/$PR_NUMBER#issuecomment-$GENERATED_PLAN_COMMENT_ID updating"
 		gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
 	else
