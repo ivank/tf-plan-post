@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/berglas-install
+      - uses: ./.github/actions/install-berglas
       - run: test/tf-plan-post.test.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
