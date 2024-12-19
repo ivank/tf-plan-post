@@ -1,0 +1,16 @@
+name: "Berglas Install"
+description: "Install berglas https://github.com/GoogleCloudPlatform/berglas"
+
+inputs:
+  version:
+    required: false
+    default: "0.5.0"
+    description: "Berglas Version"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Berglas
+    - run: |
+        curl --location https://github.com/GoogleCloudPlatform/berglas/releases/download/v${{ inputs.version }}/berglas_${{ inputs.name }}_linux_amd64.tar.gz \
+        | tar -xzC /usr/local/bin
