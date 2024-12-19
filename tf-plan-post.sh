@@ -7,10 +7,11 @@ set -e
 # We set them first, as they are used in the help message
 NO_COLOR="${NO_COLOR:-}"
 INSTALLATION_ID="${INSTALLATION_ID:-}"
-TOKEN_SECRET_NAME="${TOKEN_SECRET_NAME:-}"
+TOKEN="${TOKEN:-}"
 APP_ID="${APP_ID:-}"
-INSTALLATION_KEY_SECRET_NAME="${INSTALLATION_KEY_SECRET_NAME:-}"
+INSTALLATION_KEY="${INSTALLATION_KEY:-}"
 PR_NUMBER="${PR_NUMBER:-}"
+MODE="${MODE:-recreate}"
 REPO="${REPO:-}"
 TITLE="${TITLE:-### Generated Terraform Plan}"
 PLAN_TEXT_FILE="${PLAN_TEXT_FILE:-./plan.txt}"
@@ -68,16 +69,17 @@ Usage: ${CYAN}$(basename "$0")${END} [OPTIONS]
 Post a Terraform plan to a GitHub Pull Request as a comment.
 
 You need to provide authentication credentials, either a GitHub App (recommended) or a GitHub token.
-\"Secret Name\" refers to a secret in Google Secret Manager (example: sm://my-project/my-github-token).
+You can provide the token directly, or load it from Google Secret Manager (example: sm://my-project/my-github-token).
 Using [berglas](https://github.com/GoogleCloudPlatform/berglas) to access the secret.
 
-    ${CYAN}$(basename "$0")${END} ${PINK}--token-secret-name${END}=sm://my-project/my-github-token
-    ${CYAN}$(basename "$0")${END} ${PINK}--app-id${END}=1234 ${PINK}--installation-key-secret-name${END}=sm://my-project/my-installation-key
+    ${CYAN}$(basename "$0")${END} ${PINK}--token${END}=github_pat_...
+		${CYAN}$(basename "$0")${END} ${PINK}--token${END}=sm://my-project/my-github-token
+    ${CYAN}$(basename "$0")${END} ${PINK}--app-id${END}=1234 ${PINK}--installation-key${END}=sm://my-project/my-installation-key
 
 Those can also be provided as environment variables.
 
-    ${GREEN}TOKEN_SECRET_NAME${END}=sm://my-project/my-github-token ${CYAN}$(basename "$0")${END}
-    ${GREEN}APP_ID${END}=1234 ${GREEN}INSTALLATION_KEY_SECRET_NAME${END}=sm://my-project/my-installation-key ${CYAN}$(basename "$0")${END}
+    ${GREEN}TOKEN${END}=sm://my-project/my-github-token ${CYAN}$(basename "$0")${END}
+    ${GREEN}APP_ID${END}=1234 ${GREEN}INSTALLATION_KEY${END}=sm://my-project/my-installation-key ${CYAN}$(basename "$0")${END}
 
 Additionally you need to provide the PR number, repository.
 Also expects the Terraform plan text output (or error output) to be located at \"$PLAN_TEXT_FILE\".
@@ -90,27 +92,28 @@ You can override this with ${PINK}--plan-text-file${END} (or ${GREEN}\$PLAN_TEXT
 
 Examples:
 
-    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--token-secret-name${END}=sm://my-project/my-github-token ${PINK}--plan-text-file${END}=./other-plan.txt
+    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--token${END}=sm://my-project/my-github-token ${PINK}--plan-text-file${END}=./other-plan.txt
     ${CYAN}$(basename "$0")${END} ${PINK}--plan${END}='-chdir=./terraform' ${PINK}--title${END}='My Terraform Plan' ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--token${END}=1234
-    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--app-id${END}=1234 ${PINK}--installation-key-secret-name${END}=sm://my-project/my-installation-key
+    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--app-id${END}=1234 ${PINK}--installation-key${END}=sm://my-project/my-installation-key
 
 Options:
 
-  ${PINK}--help${END}                                 Show this message
-  ${PINK}--token-secret-name${END}=value              Google secret manager name of the GitHub token (or ENV: ${GREEN}\$TOKEN_SECRET_NAME${END})
-  ${PINK}${END}                                       ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key-secret-name${END} are provided, Example: sm://my-project/my-github-token
-  ${PINK}--app-id${END}=value                         Github App ID (or ENV: ${GREEN}\$APP_ID${END})
-  ${PINK}${END}                                       ${RED}REQUIRED${END} if ${CYAN}--token-secret-name${END} is not provided, needs ${CYAN}--installation-key-secret-name${END}
-  ${PINK}--installation-id${END}=value                Installation id, if not provided, it will be fetched from the GitHub API (or ENV: ${GREEN}\$INSTALLATION_ID${END})
-  ${PINK}--installation-key-secret-name${END}=value   Installation key saved in Google Secret Manager (or ENV: ${GREEN}\$INSTALLATION_KEY_SECRET_NAME${END})
-  ${PINK}${END}                                       ${RED}REQUIRED${END} if ${CYAN}--app-id${END} is provided, Example: sm://my-project/my-installation-key)
-  ${PINK}--pr-number${END}=value                      ${RED}REQUIRED${END} Pull Request number (or ENV: ${GREEN}\$PR_NUMBER${END})
-  ${PINK}--repo${END}=value                           ${RED}REQUIRED${END} Repository, Example: org/repo (or ENV ${GREEN}\$REPO${END})
-  ${PINK}--plan-text-file${END}=value                 Terraform plan text output (or error output) (DEFAULT: \"${CYAN}$PLAN_TEXT_FILE${END}\", or ENV: ${GREEN}\$PLAN_TEXT_FILE${END})
-  ${PINK}--title${END}=value                          Title for the review comment (DEFAULT: \"${CYAN}$TITLE${END}\", or ENV: ${GREEN}\$TITLE${END})
-  ${PINK}--dry-run${END}                              Output the contents of the comment instead of sending it to GitHub
-  ${PINK}--identifier${END}                           Identify the tf-plan-post's comment with this text (DEFAULT: \"$IDENTIFIER\", or ENV: ${GREEN}\$IDENTIFIER${END})
-  ${PINK}--no-color${END}                             Disable color output (or ENV: ${GREEN}\$NO_COLOR${END})
+  ${PINK}--help${END}                     Show this message
+  ${PINK}--token${END}=value              Google secret manager name of the GitHub token (or ENV: ${GREEN}\$TOKEN${END})
+  ${PINK}${END}                           ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key${END} are provided, Example: sm://my-project/my-github-token
+  ${PINK}--app-id${END}=value             Github App ID (or ENV: ${GREEN}\$APP_ID${END})
+  ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--token${END} is not provided, needs ${CYAN}--installation-key${END}
+  ${PINK}--installation-id${END}=value    Installation id, if not provided, it will be fetched from the GitHub API (or ENV: ${GREEN}\$INSTALLATION_ID${END})
+  ${PINK}--installation-key${END}=value   Installation key saved in Google Secret Manager (or ENV: ${GREEN}\$INSTALLATION_KEY${END})
+  ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--app-id${END} is provided, Example: sm://my-project/my-installation-key)
+  ${PINK}--pr-number${END}=value          ${RED}REQUIRED${END} Pull Request number (or ENV: ${GREEN}\$PR_NUMBER${END})
+  ${PINK}--repo${END}=value               ${RED}REQUIRED${END} Repository, Example: org/repo (or ENV ${GREEN}\$REPO${END})
+  ${PINK}--plan-text-file${END}=value     Terraform plan text output (or error output) (DEFAULT: \"${CYAN}$PLAN_TEXT_FILE${END}\", or ENV: ${GREEN}\$PLAN_TEXT_FILE${END})
+  ${PINK}--title${END}=value              Title for the review comment (DEFAULT: \"${CYAN}$TITLE${END}\", or ENV: ${GREEN}\$TITLE${END})
+	${PINK}--mode${END}=recreate|update     Mode for the plan (DEFAULT: \"${CYAN}$MODE${END}\", possible values: recreate, update or ENV: ${GREEN}\$MODE${END})
+  ${PINK}--dry-run${END}                  Output the contents of the comment instead of sending it to GitHub
+  ${PINK}--identifier${END}               Identify the tf-plan-post's comment with this text (DEFAULT: \"$IDENTIFIER\", or ENV: ${GREEN}\$IDENTIFIER${END})
+  ${PINK}--no-color${END}                 Disable color output (or ENV: ${GREEN}\$NO_COLOR${END})
 
 Required commands: ${RED}${!REQUIRED_COMMANDS[*]}${END}
 "
@@ -125,16 +128,16 @@ for i in "$@"; do
 		INSTALLATION_ID="${i#*=}"
 		shift
 		;;
-	--token-secret-name=*)
-		TOKEN_SECRET_NAME="${i#*=}"
+	--token=*)
+		TOKEN="${i#*=}"
 		shift
 		;;
 	--app-id=*)
 		APP_ID="${i#*=}"
 		shift
 		;;
-	--installation-key-secret-name=*)
-		INSTALLATION_KEY_SECRET_NAME="${i#*=}"
+	--installation-key=*)
+		INSTALLATION_KEY="${i#*=}"
 		shift
 		;;
 	--repo=*)
@@ -155,6 +158,10 @@ for i in "$@"; do
 		;;
 	--plan-text-file=*)
 		PLAN_TEXT_FILE="${i#*=}"
+		shift
+		;;
+	--mode=*)
+		MODE="${i#*=}"
 		shift
 		;;
 	--dry-run)
@@ -185,6 +192,10 @@ for arg in "${!REQUIRED_ARGS[@]}"; do
 	fi
 done
 
+if [ "$MODE" != "recreate" ] && [ "$MODE" != "update" ]; then
+	error "Mode must be either 'recreate' or 'update'"
+fi
+
 if [ ! -f "$PLAN_TEXT_FILE" ]; then
 	error "Plan text file \"$PLAN_TEXT_FILE\" does not exist. If the file is in a different location, you can set it with ${PINK}--plan-text-file${END} or ${GREEN}\$PLAN_TEXT_FILE${END}"
 fi
@@ -209,22 +220,18 @@ done
 if [ "$DRY_RUN" = true ]; then
 	echo -e "${CYAN}Auth${END}: ${RED}DRY RUN${END} Skipping authentication"
 else
-	if [ "$TOKEN_SECRET_NAME" ]; then
-		echo -e "${CYAN}Auth${END} Loading Token from Google Secret $TOKEN_SECRET_NAME"
-		TOKEN=$(berglas access "$TOKEN_SECRET_NAME")
+	if [ "$TOKEN" ]; then
+		if [[ "$TOKEN" =~ ^sm:// ]]; then
+			echo -e "${CYAN}Auth${END} Loading Token from Google Secret $TOKEN"
+			TOKEN=$(berglas access "$TOKEN")
+		fi
+		gh auth login --with-token <<<"$TOKEN"
 		echo -e "${CYAN}Auth${END} Token Loaded"
-	else
-		if [ -z "$APP_ID" ]; then
-			error "${PINK}--app-id${END} (or ${GREEN}\$APP_ID${END}) is required when ${PINK}--token-secret-name${END} (or ${GREEN}\$TOKEN_SECRET_NAME${END}) is not provided"
+	elif [ "$APP_ID" ] && [ "$INSTALLATION_KEY" ]; then
+		if [[ "$INSTALLATION_KEY" =~ ^sm:// ]]; then
+			echo -e "${CYAN}Auth${END} Loading Installation Key from Google Secret $INSTALLATION_KEY"
+			INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY")
 		fi
-
-		if [ -z "$INSTALLATION_KEY_SECRET_NAME" ]; then
-			error "${PINK}--installation-key-secret-name${END} (or ${GREEN}\$INSTALLATION_KEY_SECRET_NAME${END}) is required when ${PINK}--app-id${END} (or ${GREEN}\$APP_ID${END}) is provided"
-		fi
-
-		echo -e "${CYAN}Auth${END} Loading Installation Key from Google Secret $INSTALLATION_KEY_SECRET_NAME"
-
-		INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY_SECRET_NAME")
 
 		# JWT
 		# ======
@@ -246,9 +253,11 @@ else
 
 		ACCESS_TOKEN=$(curl --silent --request POST --header "$JWT_HEADER" "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
 		TOKEN=$(echo "$ACCESS_TOKEN" | jq --raw-output ".token")
+		gh auth login --with-token <<<"$TOKEN"
+		echo -e "${CYAN}Auth${END} Installation Token generated"
+	else
+		echo -e "${CYAN}Auth${END} No explicit auth found (--token or --app-id and --installation-key), using GitHub CLI default"
 	fi
-	gh auth login --with-token <<<"$TOKEN"
-	echo -e "${CYAN}Auth${END} Successful"
 fi
 
 # Terraform plan
@@ -305,12 +314,22 @@ else
 	set -e
 
 	if [[ "$GENERATED_PLAN_COMMENT_ID_EXIT_CODE" -eq 0 && "$GENERATED_PLAN_COMMENT_ID" ]]; then
-		echo -e "${CYAN}Comment${END} Existing comment found: https://github.com/$REPO/pull/$PR_NUMBER#issuecomment-$GENERATED_PLAN_COMMENT_ID updating"
-		gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
+		echo -e "${CYAN}Comment${END} Existing comment found"
+
+		if [ "$MODE" = "recreate" ]; then
+			echo -e "${CYAN}Comment${END} Deleting existing comment"
+			gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method DELETE
+
+			echo -e "${CYAN}Comment${END} Creating new comment"
+			gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --silent --method POST --field body="$BODY"
+		else
+			echo -e "${CYAN}Comment${END} Updating existing comment"
+			gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
+		fi
 	else
-		echo -e "${CYAN}Comment${END} Existing comment not found, Creating"
+		echo -e "${CYAN}Comment${END} Existing comment not found, creating"
 		set +e
-		gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --method POST --field body="$BODY"
+		gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --silent --method POST --field body="$BODY"
 		set -e
 	fi
 
