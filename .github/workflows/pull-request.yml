@@ -11,6 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/install-berglas
-      - run: test/tf-plan-post.test.sh
+      - name: Run tests
+        uses: sudo-bot/action-shunit2@latest
+        with:
+          cli: test/tf-plan-post.test.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
