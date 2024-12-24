@@ -4,7 +4,7 @@ test_help_message() {
 	run --help
 
 	assertEquals "Should return success" "$RETURN" 0
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 	assertContains "Should have output" "$OUT" "Post a Terraform plan to a GitHub Pull Request as a comment."
 }
 
@@ -121,7 +121,7 @@ test_dry_run_custom_identifier_success() {
 
 	assertEquals "Should not return error" "$RETURN" 0
 	assertEquals "Should have output" "$EXPECTED" "$OUT"
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 }
 
 test_dry_run_success() {
@@ -165,7 +165,7 @@ test_dry_run_success() {
 
 	assertEquals "Should not return error" "$RETURN" 0
 	assertEquals "Should have output" "$EXPECTED" "$OUT"
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 }
 
 test_dry_run_error() {
@@ -196,7 +196,7 @@ test_dry_run_error() {
 	)
 	assertEquals "Should not return error" "$RETURN" 0
 	assertEquals "Should have output" "$EXPECTED" "$OUT"
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 }
 
 test_dry_run_no_changes() {
@@ -221,7 +221,7 @@ test_dry_run_no_changes() {
 	)
 	assertEquals "Should not return error" "$RETURN" 0
 	assertEquals "Should have output" "$OUT" "$EXPECTED"
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 }
 
 test_create_comment_and_post() {
@@ -238,7 +238,7 @@ test_create_comment_and_post() {
 
 	assertEquals "Should not return error" "$RETURN" 0
 	assertEquals "Should have output" "$EXPECTED" "$OUT"
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 
 	# Check if the comment was created
 	COMMENT=$(gh api "/repos/ivank/tf-plan-post/issues/1/comments" --jq '.[].body')
@@ -295,7 +295,7 @@ test_update_existing_comment_with_error_plan() {
 
 	assertEquals "Should not return error" "$RETURN" 0
 	assertEquals "Should have output" "$EXPECTED" "$OUT"
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 
 	# Check if the last comment was updated
 	COMMENT=$(gh api "/repos/ivank/tf-plan-post/issues/1/comments" --jq '.[].body')
@@ -344,7 +344,7 @@ test_recreate_comment() {
 
 	assertEquals "Should not return error" "$RETURN" 0
 	assertEquals "Should have output" "$EXPECTED" "$OUT"
-	assertNull "Should not have error" "$ERR"
+	assertEquals "Should not have error" "" "$ERR"
 
 	# Check if the last comment was updated
 	COMMENT=$(gh api "/repos/ivank/tf-plan-post/issues/1/comments" --jq '.[].body')
