@@ -4,7 +4,7 @@ description: "Install berglas https://github.com/GoogleCloudPlatform/berglas"
 inputs:
   version:
     required: false
-    default: "0.5.0"
+    default: "2.0.6"
     description: "Berglas Version"
 
 runs:
