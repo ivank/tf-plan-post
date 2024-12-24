@@ -11,7 +11,7 @@ runs:
   using: "composite"
   steps:
     - name: Install Berglas
-    - run: |
+      run: |
         curl --location https://github.com/GoogleCloudPlatform/berglas/releases/download/v${{ inputs.version }}/berglas_${{ inputs.name }}_linux_amd64.tar.gz \
         | tar -xzC /usr/local/bin
       shell: bash
