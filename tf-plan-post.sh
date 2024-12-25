@@ -74,8 +74,7 @@ check_optional_command() {
 	fi
 }
 
-USAGE="
-Usage: ${CYAN}$(basename "$0")${END} [OPTIONS]
+USAGE="Usage: ${CYAN}$(basename "$0")${END} [OPTIONS]
 
 Post a Terraform plan to a GitHub Pull Request as a comment.
 
@@ -103,33 +102,53 @@ You can override this with ${PINK}--plan-text-file${END} (or ${GREEN}\$PLAN_TEXT
 
 Examples:
 
-    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--token${END}=sm://my-project/my-github-token ${PINK}--plan-text-file${END}=./other-plan.txt
-    ${CYAN}$(basename "$0")${END} ${PINK}--plan${END}='-chdir=./terraform' ${PINK}--title${END}='My Terraform Plan' ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--token${END}=1234
-    ${CYAN}$(basename "$0")${END} ${PINK}--pr-number${END}=1234 ${PINK}--repo${END}=org/repo ${PINK}--app-id${END}=1234 ${PINK}--installation-key${END}=sm://my-project/my-installation-key
+    ${CYAN}$(basename "$0")${END} \\
+      ${PINK}--pr-number${END}=1234 \\
+      ${PINK}--repo${END}=org/repo \\
+      ${PINK}--token${END}=sm://my-project/my-github-token \\
+      ${PINK}--plan-text-file${END}=./other.txt
+
+    ${CYAN}$(basename "$0")${END} \\
+      ${PINK}--plan${END}='-chdir=./terraform' \\
+      ${PINK}--title${END}='My Terraform Plan' \\
+      ${PINK}--pr-number${END}=1234 \\
+      ${PINK}--repo${END}=org/repo \\
+      ${PINK}--token${END}=1234
+
+    ${CYAN}$(basename "$0")${END} \\
+      ${PINK}--pr-number${END}=1234 \\
+      ${PINK}--repo${END}=org/repo \\
+      ${PINK}--app-id${END}=1234 \\
+      ${PINK}--installation-key${END}=sm://my-project/my-installation-key
 
 Options:
 
   ${PINK}--help${END}                     Show this message
   ${PINK}--token${END}=value              GitHub token, provided directly or saved in google secret manager (or ENV: ${GREEN}\$TOKEN${END})
-  ${PINK}${END}                           ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key${END} are provided, Example: sm://my-project/my-github-token
+  ${PINK}${END}                           ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key${END} are provided,
+  ${PINK}${END}                           Example: sm://my-project/my-github-token
   ${PINK}--app-id${END}=value             Github App ID (or ENV: ${GREEN}\$APP_ID${END})
   ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--token${END} is not provided, needs ${CYAN}--installation-key${END}
-  ${PINK}--installation-id${END}=value    Installation id, if not provided, it will be fetched from the GitHub API (or ENV: ${GREEN}\$INSTALLATION_ID${END})
-  ${PINK}--installation-key${END}=value   Installation key provided directly or saved in google secret manager (or ENV: ${GREEN}\$INSTALLATION_KEY${END})
+  ${PINK}--installation-id${END}=value    Installation id, if not provided, it will be fetched from the GitHub API
+  ${PINK}${END}                           (or ENV: ${GREEN}\$INSTALLATION_ID${END})
+  ${PINK}--installation-key${END}=value   Installation key provided directly or saved in google secret manager
+  ${PINK}${END}                           (or ENV: ${GREEN}\$INSTALLATION_KEY${END})
   ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--app-id${END} is provided, Example: sm://my-project/my-installation-key)
   ${PINK}--pr-number${END}=value          ${RED}REQUIRED${END} Pull Request number (or ENV: ${GREEN}\$PR_NUMBER${END})
   ${PINK}--repo${END}=value               ${RED}REQUIRED${END} Repository, Example: org/repo (or ENV ${GREEN}\$REPO${END})
-  ${PINK}--plan-text-file${END}=value     Terraform plan text output (or error output) (DEFAULT: \"${CYAN}$PLAN_TEXT_FILE${END}\", or ENV: ${GREEN}\$PLAN_TEXT_FILE${END})
+  ${PINK}--plan-text-file${END}=value     Terraform plan text output (or error output)
+  ${PINK}${END}                           (DEFAULT: \"${CYAN}$PLAN_TEXT_FILE${END}\", or ENV: ${GREEN}\$PLAN_TEXT_FILE${END})
   ${PINK}--title${END}=value              Title for the review comment (DEFAULT: \"${CYAN}$TITLE${END}\", or ENV: ${GREEN}\$TITLE${END})
-  ${PINK}--mode${END}=recreate|update     Mode for the plan (DEFAULT: \"${CYAN}$MODE${END}\", possible values: recreate, update or ENV: ${GREEN}\$MODE${END})
+  ${PINK}--mode${END}=recreate|update     Mode for the plan
+  ${PINK}${END}                           (DEFAULT: \"${CYAN}$MODE${END}\", possible values: recreate, update or ENV: ${GREEN}\$MODE${END})
   ${PINK}--dry-run${END}                  Output the contents of the comment instead of sending it to GitHub
-  ${PINK}--identifier${END}               Identify the tf-plan-post's comment with this text (DEFAULT: \"$IDENTIFIER\", or ENV: ${GREEN}\$IDENTIFIER${END})
+  ${PINK}--identifier${END}               Identify the tf-plan-post's comment with this text
+  ${PINK}${END}                           (DEFAULT: \"$IDENTIFIER\", or ENV: ${GREEN}\$IDENTIFIER${END})
   ${PINK}--no-color${END}                 Disable color output (or ENV: ${GREEN}\$NO_COLOR${END})
 
 Other binaries in PATH used by this script:
 Required: ${RED}${!REQUIRED_COMMANDS[*]}${END}
-Optional: ${RED}${!OPTIONAL_COMMANDS[*]}${END}
-"
+Optional: ${RED}${!OPTIONAL_COMMANDS[*]}${END}"
 
 for i in "$@"; do
 	case $i in

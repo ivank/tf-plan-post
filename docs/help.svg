@@ -1,0 +1,84 @@
+<svg width="2708px" height="1208px" viewBox="0 0 2708 1208" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve">
+    <style>
+        * {
+            font-family: Courier, monospace;
+            font-size: 14px;
+        }
+        tspan, text {
+            font-variant-ligatures: none;
+            dominant-baseline: central;
+            white-space: pre;
+            fill: #ffffff;
+        }
+        .bg {
+            stroke-width: "0.5px";
+        }
+        <!-- Foreground ANSI colors -->
+        .fa1 { fill: #cc372e; }
+        .fa2 { fill: #26a439; }
+        .fa5 { fill: #9647bf; }
+        .fa6 { fill: #479ec2; }
+    </style>
+    <rect width="100%" height="100%" x="0" y="0" style="fill: #1e1e1e"/>
+<text x="4px" y="12px"><tspan>Usage: </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan>[OPTIONS]</tspan></text>
+<text x="4px" y="44px"><tspan>Post a Terraform plan to a GitHub Pull Request as a comment.</tspan></text>
+<text x="4px" y="76px"><tspan>You need to provide authentication credentials, either a GitHub App (recommended) or a GitHub token.</tspan></text>
+<text x="4px" y="92px"><tspan>You can provide the token directly, or load it from Google Secret Manager (example: sm://my-project/my-github-token).</tspan></text>
+<text x="4px" y="108px"><tspan>Using [berglas](https://github.com/GoogleCloudPlatform/berglas) to access the secret.</tspan></text>
+<text x="4px" y="140px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan class="fa5">--token</tspan><tspan>=github_pat_...</tspan></text>
+<text x="4px" y="156px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan class="fa5">--token</tspan><tspan>=sm://my-project/my-github-token</tspan></text>
+<text x="4px" y="172px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan class="fa5">--app-id</tspan><tspan>=1234 </tspan><tspan class="fa5">--installation-key</tspan><tspan>=sm://my-project/my-installation-key</tspan></text>
+<text x="4px" y="204px"><tspan>Those can also be provided as environment variables.</tspan></text>
+<text x="4px" y="236px"><tspan>    </tspan><tspan class="fa2">TOKEN</tspan><tspan>=sm://my-project/my-github-token </tspan><tspan class="fa6">tf-plan-post.sh</tspan></text>
+<text x="4px" y="252px"><tspan>    </tspan><tspan class="fa2">APP_ID</tspan><tspan>=1234 </tspan><tspan class="fa2">INSTALLATION_KEY</tspan><tspan>=sm://my-project/my-installation-key </tspan><tspan class="fa6">tf-plan-post.sh</tspan></text>
+<text x="4px" y="284px"><tspan>Additionally you need to provide the PR number, repository.</tspan></text>
+<text x="4px" y="300px"><tspan>Also expects the Terraform plan text output (or error output) to be located at &#34;./plan.txt&#34;.</tspan></text>
+<text x="4px" y="316px"><tspan>You can override this with </tspan><tspan class="fa5">--plan-text-file </tspan><tspan>(or </tspan><tspan class="fa2">$PLAN_TEXT_FILE</tspan><tspan>)</tspan></text>
+<text x="4px" y="348px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan class="fa5">--pr-number</tspan><tspan>=1234 </tspan><tspan class="fa5">--repo</tspan><tspan>=org/repo</tspan></text>
+<text x="4px" y="364px"><tspan>    </tspan><tspan class="fa2">PR_NUMBER</tspan><tspan>=1234 </tspan><tspan class="fa2">REPO</tspan><tspan>=org/repo </tspan><tspan class="fa6">tf-plan-post.sh</tspan></text>
+<text x="4px" y="380px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan class="fa5">--pr-number</tspan><tspan>=1234 </tspan><tspan class="fa5">--repo</tspan><tspan>=org/repo </tspan><tspan class="fa5">--plan-text-file</tspan><tspan>=./other-plan.txt</tspan></text>
+<text x="4px" y="396px"><tspan>    </tspan><tspan class="fa2">PR_NUMBER</tspan><tspan>=1234 </tspan><tspan class="fa2">REPO</tspan><tspan>=org/repo </tspan><tspan class="fa2">PLAN_TEXT_FILE</tspan><tspan>=./other-plan.txt </tspan><tspan class="fa6">tf-plan-post.sh</tspan></text>
+<text x="4px" y="428px"><tspan>Examples:</tspan></text>
+<text x="4px" y="460px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan>\</tspan></text>
+<text x="4px" y="476px"><tspan>      </tspan><tspan class="fa5">--pr-number</tspan><tspan>=1234 \</tspan></text>
+<text x="4px" y="492px"><tspan>      </tspan><tspan class="fa5">--repo</tspan><tspan>=org/repo \</tspan></text>
+<text x="4px" y="508px"><tspan>      </tspan><tspan class="fa5">--token</tspan><tspan>=sm://my-project/my-github-token \</tspan></text>
+<text x="4px" y="524px"><tspan>      </tspan><tspan class="fa5">--plan-text-file</tspan><tspan>=./other.txt</tspan></text>
+<text x="4px" y="556px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan>\</tspan></text>
+<text x="4px" y="572px"><tspan>      </tspan><tspan class="fa5">--plan</tspan><tspan>=&#39;-chdir=./terraform&#39; \</tspan></text>
+<text x="4px" y="588px"><tspan>      </tspan><tspan class="fa5">--title</tspan><tspan>=&#39;My Terraform Plan&#39; \</tspan></text>
+<text x="4px" y="604px"><tspan>      </tspan><tspan class="fa5">--pr-number</tspan><tspan>=1234 \</tspan></text>
+<text x="4px" y="620px"><tspan>      </tspan><tspan class="fa5">--repo</tspan><tspan>=org/repo \</tspan></text>
+<text x="4px" y="636px"><tspan>      </tspan><tspan class="fa5">--token</tspan><tspan>=1234</tspan></text>
+<text x="4px" y="668px"><tspan>    </tspan><tspan class="fa6">tf-plan-post.sh </tspan><tspan>\</tspan></text>
+<text x="4px" y="684px"><tspan>      </tspan><tspan class="fa5">--pr-number</tspan><tspan>=1234 \</tspan></text>
+<text x="4px" y="700px"><tspan>      </tspan><tspan class="fa5">--repo</tspan><tspan>=org/repo \</tspan></text>
+<text x="4px" y="716px"><tspan>      </tspan><tspan class="fa5">--app-id</tspan><tspan>=1234 \</tspan></text>
+<text x="4px" y="732px"><tspan>      </tspan><tspan class="fa5">--installation-key</tspan><tspan>=sm://my-project/my-installation-key</tspan></text>
+<text x="4px" y="764px"><tspan>Options:</tspan></text>
+<text x="4px" y="796px"><tspan>  </tspan><tspan class="fa5">--help                     </tspan><tspan>Show this message</tspan></text>
+<text x="4px" y="812px"><tspan>  </tspan><tspan class="fa5">--token</tspan><tspan>=value              GitHub token, provided directly or saved in google secret manager (or ENV: </tspan><tspan class="fa2">$TOKEN</tspan><tspan>)</tspan></text>
+<text x="4px" y="828px"><tspan>                             </tspan><tspan class="fa1">REQUIRED </tspan><tspan>Unless </tspan><tspan class="fa6">--app-id </tspan><tspan>and </tspan><tspan class="fa6">--installation-key </tspan><tspan>are provided,</tspan></text>
+<text x="4px" y="844px"><tspan>                             Example: sm://my-project/my-github-token</tspan></text>
+<text x="4px" y="860px"><tspan>  </tspan><tspan class="fa5">--app-id</tspan><tspan>=value             Github App ID (or ENV: </tspan><tspan class="fa2">$APP_ID</tspan><tspan>)</tspan></text>
+<text x="4px" y="876px"><tspan>                             </tspan><tspan class="fa1">REQUIRED </tspan><tspan>if </tspan><tspan class="fa6">--token </tspan><tspan>is not provided, needs </tspan><tspan class="fa6">--installation-key</tspan></text>
+<text x="4px" y="892px"><tspan>  </tspan><tspan class="fa5">--installation-id</tspan><tspan>=value    Installation id, if not provided, it will be fetched from the GitHub API</tspan></text>
+<text x="4px" y="908px"><tspan>                             (or ENV: </tspan><tspan class="fa2">$INSTALLATION_ID</tspan><tspan>)</tspan></text>
+<text x="4px" y="924px"><tspan>  </tspan><tspan class="fa5">--installation-key</tspan><tspan>=value   Installation key provided directly or saved in google secret manager</tspan></text>
+<text x="4px" y="940px"><tspan>                             (or ENV: </tspan><tspan class="fa2">$INSTALLATION_KEY</tspan><tspan>)</tspan></text>
+<text x="4px" y="956px"><tspan>                             </tspan><tspan class="fa1">REQUIRED </tspan><tspan>if </tspan><tspan class="fa6">--app-id </tspan><tspan>is provided, Example: sm://my-project/my-installation-key)</tspan></text>
+<text x="4px" y="972px"><tspan>  </tspan><tspan class="fa5">--pr-number</tspan><tspan>=value          </tspan><tspan class="fa1">REQUIRED </tspan><tspan>Pull Request number (or ENV: </tspan><tspan class="fa2">$PR_NUMBER</tspan><tspan>)</tspan></text>
+<text x="4px" y="988px"><tspan>  </tspan><tspan class="fa5">--repo</tspan><tspan>=value               </tspan><tspan class="fa1">REQUIRED </tspan><tspan>Repository, Example: org/repo (or ENV </tspan><tspan class="fa2">$REPO</tspan><tspan>)</tspan></text>
+<text x="4px" y="1004px"><tspan>  </tspan><tspan class="fa5">--plan-text-file</tspan><tspan>=value     Terraform plan text output (or error output)</tspan></text>
+<text x="4px" y="1020px"><tspan>                             (DEFAULT: &#34;</tspan><tspan class="fa6">./plan.txt</tspan><tspan>&#34;, or ENV: </tspan><tspan class="fa2">$PLAN_TEXT_FILE</tspan><tspan>)</tspan></text>
+<text x="4px" y="1036px"><tspan>  </tspan><tspan class="fa5">--title</tspan><tspan>=value              Title for the review comment (DEFAULT: &#34;</tspan><tspan class="fa6">### Generated Terraform Plan</tspan><tspan>&#34;, or ENV: </tspan><tspan class="fa2">$TITLE</tspan><tspan>)</tspan></text>
+<text x="4px" y="1052px"><tspan>  </tspan><tspan class="fa5">--mode</tspan><tspan>=recreate|update     Mode for the plan</tspan></text>
+<text x="4px" y="1068px"><tspan>                             (DEFAULT: &#34;</tspan><tspan class="fa6">recreate</tspan><tspan>&#34;, possible values: recreate, update or ENV: </tspan><tspan class="fa2">$MODE</tspan><tspan>)</tspan></text>
+<text x="4px" y="1084px"><tspan>  </tspan><tspan class="fa5">--dry-run                  </tspan><tspan>Output the contents of the comment instead of sending it to GitHub</tspan></text>
+<text x="4px" y="1100px"><tspan>  </tspan><tspan class="fa5">--identifier               </tspan><tspan>Identify the tf-plan-post&#39;s comment with this text</tspan></text>
+<text x="4px" y="1116px"><tspan>                             (DEFAULT: &#34;&lt;!-- tf-plan-post.sh --&gt;&#34;, or ENV: </tspan><tspan class="fa2">$IDENTIFIER</tspan><tspan>)</tspan></text>
+<text x="4px" y="1132px"><tspan>  </tspan><tspan class="fa5">--no-color                 </tspan><tspan>Disable color output (or ENV: </tspan><tspan class="fa2">$NO_COLOR</tspan><tspan>)</tspan></text>
+<text x="4px" y="1164px"><tspan>Other binaries in PATH used by this script:</tspan></text>
+<text x="4px" y="1180px"><tspan>Required: </tspan><tspan class="fa1">awk jq gh</tspan></text>
+<text x="4px" y="1196px"><tspan>Optional: </tspan><tspan class="fa1">base64 berglas openssl</tspan></text>
+</svg>
