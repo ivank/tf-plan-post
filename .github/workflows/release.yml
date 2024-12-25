@@ -11,6 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/install-berglas
+      - uses: ./.github/actions/install-shunit2
+      - name: Run tests
+        run: test/tf-plan-post.test.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5

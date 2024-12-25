@@ -1,4 +1,4 @@
-name: "Berglas Install"
+name: "Install Berglas"
 description: "Install berglas https://github.com/GoogleCloudPlatform/berglas"
 
 inputs:
@@ -15,11 +15,6 @@ runs:
         curl --location https://github.com/GoogleCloudPlatform/berglas/releases/download/v${{ inputs.version }}/berglas_${{ inputs.version }}_linux_amd64.tar.gz \
         | tar -xzC /usr/local/bin
 
-        curl -sLo /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
-        chmod +x /usr/local/bin/shunit2
-      shell: bash
-    - name: Install shunit2
-      run: |
         curl -sLo /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
         chmod +x /usr/local/bin/shunit2
       shell: bash
