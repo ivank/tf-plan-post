@@ -14,5 +14,12 @@ runs:
       run: |
         curl --location https://github.com/GoogleCloudPlatform/berglas/releases/download/v${{ inputs.version }}/berglas_${{ inputs.version }}_linux_amd64.tar.gz \
         | tar -xzC /usr/local/bin
-        echo "/usr/local/bin" >> "$GITHUB_PATH"
+
+        curl -sLo /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        chmod +x /usr/local/bin/shunit2
+      shell: bash
+    - name: Install shunit2
+      run: |
+        curl -sLo /usr/local/bin/shunit2 https://raw.githubusercontent.com/kward/shunit2/master/shunit2
+        chmod +x /usr/local/bin/shunit2
       shell: bash

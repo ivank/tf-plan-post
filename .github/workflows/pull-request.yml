@@ -10,13 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: sigoden/install-binary@v1
-        with:
-          repo: GoogleCloudPlatform/berglas
-          tag: v2.0.6
+      - uses: ./.github/actions/install-berglas
       - name: Run tests
-        uses: sudo-bot/action-shunit2@latest
-        with:
-          cli: test/tf-plan-post.test.sh
+        run: test/tf-plan-post.test.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
