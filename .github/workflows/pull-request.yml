@@ -10,7 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/install-berglas
+      - uses: sigoden/install-binary@v1
+        with:
+          repo: GoogleCloudPlatform/berglas
+          tag: v2.0.6
       - name: Run tests
         uses: sudo-bot/action-shunit2@latest
         with:
