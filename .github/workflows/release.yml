@@ -10,6 +10,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-shunit2
+      - uses: sigoden/install-binary@v1
+        with:
+          repo: GoogleCloudPlatform/berglas
+      - name: Run tests
+        run: test/tf-plan-post.test.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker meta
         id: meta
