@@ -45,14 +45,17 @@ fi
 
 # Declare required commands and the steps needed to install them
 declare -A REQUIRED_COMMANDS
+declare -A OPTIONAL_COMMANDS
 
-REQUIRED_COMMANDS["berglas"]="https://github.com/GoogleCloudPlatform/berglas?tab=readme-ov-file#installation"
 REQUIRED_COMMANDS["awk"]="https://learnbyexample.github.io/learn_gnuawk/installation-and-documentation.html"
-REQUIRED_COMMANDS["openssl"]="https://openssl.org/"
 REQUIRED_COMMANDS["jq"]="https://jqlang.github.io/jq/download/"
-REQUIRED_COMMANDS["base64"]="https://www.gnu.org/software/coreutils/manual/html_node/base64-invocation.html"
 REQUIRED_COMMANDS["gh"]="https://cli.github.com/"
 
+OPTIONAL_COMMANDS["berglas"]="https://github.com/GoogleCloudPlatform/berglas?tab=readme-ov-file#installation"
+OPTIONAL_COMMANDS["openssl"]="https://openssl.org/"
+OPTIONAL_COMMANDS["base64"]="https://www.gnu.org/software/coreutils/manual/html_node/base64-invocation.html"
+
+# A function to display an error message in stderr and exit
 error() {
 	ERROR="
 ${RED}ERROR:${END} $1
@@ -61,6 +64,14 @@ Usage: ${CYAN}$(basename "$0")${END} ${PINK}--help${END}
 "
 	echo -e "${ERROR}" >&2
 	exit 1
+}
+
+# A function to check if an optional binary is installed in path
+# If not, print a message with the installation instructions
+check_optional_command() {
+	if ! command -v "$1" &>/dev/null; then
+		error "Optional command $1 needs to be installed. ${OPTIONAL_COMMANDS[$1]}"
+	fi
 }
 
 USAGE="
@@ -73,7 +84,7 @@ You can provide the token directly, or load it from Google Secret Manager (examp
 Using [berglas](https://github.com/GoogleCloudPlatform/berglas) to access the secret.
 
     ${CYAN}$(basename "$0")${END} ${PINK}--token${END}=github_pat_...
-		${CYAN}$(basename "$0")${END} ${PINK}--token${END}=sm://my-project/my-github-token
+    ${CYAN}$(basename "$0")${END} ${PINK}--token${END}=sm://my-project/my-github-token
     ${CYAN}$(basename "$0")${END} ${PINK}--app-id${END}=1234 ${PINK}--installation-key${END}=sm://my-project/my-installation-key
 
 Those can also be provided as environment variables.
@@ -99,23 +110,25 @@ Examples:
 Options:
 
   ${PINK}--help${END}                     Show this message
-  ${PINK}--token${END}=value              Google secret manager name of the GitHub token (or ENV: ${GREEN}\$TOKEN${END})
+  ${PINK}--token${END}=value              GitHub token, provided directly or saved in google secret manager (or ENV: ${GREEN}\$TOKEN${END})
   ${PINK}${END}                           ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key${END} are provided, Example: sm://my-project/my-github-token
   ${PINK}--app-id${END}=value             Github App ID (or ENV: ${GREEN}\$APP_ID${END})
   ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--token${END} is not provided, needs ${CYAN}--installation-key${END}
   ${PINK}--installation-id${END}=value    Installation id, if not provided, it will be fetched from the GitHub API (or ENV: ${GREEN}\$INSTALLATION_ID${END})
-  ${PINK}--installation-key${END}=value   Installation key saved in Google Secret Manager (or ENV: ${GREEN}\$INSTALLATION_KEY${END})
+  ${PINK}--installation-key${END}=value   Installation key provided directly or saved in google secret manager (or ENV: ${GREEN}\$INSTALLATION_KEY${END})
   ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--app-id${END} is provided, Example: sm://my-project/my-installation-key)
   ${PINK}--pr-number${END}=value          ${RED}REQUIRED${END} Pull Request number (or ENV: ${GREEN}\$PR_NUMBER${END})
   ${PINK}--repo${END}=value               ${RED}REQUIRED${END} Repository, Example: org/repo (or ENV ${GREEN}\$REPO${END})
   ${PINK}--plan-text-file${END}=value     Terraform plan text output (or error output) (DEFAULT: \"${CYAN}$PLAN_TEXT_FILE${END}\", or ENV: ${GREEN}\$PLAN_TEXT_FILE${END})
   ${PINK}--title${END}=value              Title for the review comment (DEFAULT: \"${CYAN}$TITLE${END}\", or ENV: ${GREEN}\$TITLE${END})
-	${PINK}--mode${END}=recreate|update     Mode for the plan (DEFAULT: \"${CYAN}$MODE${END}\", possible values: recreate, update or ENV: ${GREEN}\$MODE${END})
+  ${PINK}--mode${END}=recreate|update     Mode for the plan (DEFAULT: \"${CYAN}$MODE${END}\", possible values: recreate, update or ENV: ${GREEN}\$MODE${END})
   ${PINK}--dry-run${END}                  Output the contents of the comment instead of sending it to GitHub
   ${PINK}--identifier${END}               Identify the tf-plan-post's comment with this text (DEFAULT: \"$IDENTIFIER\", or ENV: ${GREEN}\$IDENTIFIER${END})
   ${PINK}--no-color${END}                 Disable color output (or ENV: ${GREEN}\$NO_COLOR${END})
 
-Required commands: ${RED}${!REQUIRED_COMMANDS[*]}${END}
+Other binaries in PATH used by this script:
+Required: ${RED}${!REQUIRED_COMMANDS[*]}${END}
+Optional: ${RED}${!OPTIONAL_COMMANDS[*]}${END}
 "
 
 for i in "$@"; do
@@ -223,6 +236,7 @@ else
 	if [ "$TOKEN" ]; then
 		if [[ "$TOKEN" =~ ^sm:// ]]; then
 			echo -e "${CYAN}Auth${END} Loading Token from Google Secret $TOKEN"
+			check_optional_command berglas
 			TOKEN=$(berglas access "$TOKEN")
 		fi
 		gh auth login --with-token <<<"$TOKEN"
@@ -230,8 +244,12 @@ else
 	elif [ "$APP_ID" ] && [ "$INSTALLATION_KEY" ]; then
 		if [[ "$INSTALLATION_KEY" =~ ^sm:// ]]; then
 			echo -e "${CYAN}Auth${END} Loading Installation Key from Google Secret $INSTALLATION_KEY"
+			check_optional_command berglas
 			INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY")
 		fi
+
+		check_optional_command base64
+		check_optional_command openssl
 
 		# JWT
 		# ======
