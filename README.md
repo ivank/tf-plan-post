@@ -15,7 +15,7 @@ steps:
       terraform plan -no-color > >(tee plan.txt)
 
   - id: Post
-    name: ghcr.io/ivank/tf-plan-post:0.0.10
+    name: ghcr.io/ivank/tf-plan-post:1.0.0
     env:
       - APP_ID=123
       - INSTALLATION_KEY=sm://my-project/my-installation-key
@@ -35,7 +35,7 @@ steps:
       terraform plan -no-color 2> >(tee plan.txt) > >(tee plan.txt) || touch plan-failed.txt
 
   - id: Post
-    name: ghcr.io/ivank/tf-plan-post:0.0.11
+    name: ghcr.io/ivank/tf-plan-post:1.0.0
     env:
       - TOKEN=sm://$PROJECT_ID/test-github-token
       - REPO=$REPO_FULL_NAME
