@@ -6,8 +6,9 @@ jobs:
   push:
     runs-on: ubuntu-latest
     permissions:
-      packages: write
       contents: read
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/install-shunit2
