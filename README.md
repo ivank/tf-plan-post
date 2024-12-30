@@ -23,7 +23,7 @@ steps:
       - PR_NUMBER=$_PR_NUMBER
 ```
 
-`tf-plan-post.sh` can also capture and process failed plans. This does required a little bit more boilerplate from cloud build, since it doesn't support failing steps natively.
+`tf-plan-post.sh` can also capture and process failed plans. This does required a little bit more boilerplate from cloud build, since it doesn't support failing steps natively. You can also disable color output if the display doesn't support it (as in cloudbuild)
 
 ```yaml
 steps:
@@ -31,12 +31,13 @@ steps:
     name: hashicorp/terraform:1.8.2
     script: |
       set -ex
-      terraform init -no-color 
+      terraform init -no-color
       terraform plan -no-color 2> >(tee plan.txt) > >(tee plan.txt) || touch plan-failed.txt
 
   - id: Post
     name: ghcr.io/ivank/tf-plan-post:1.0.0
     env:
+      - NO_COLOR=true
       - TOKEN=sm://$PROJECT_ID/test-github-token
       - REPO=$REPO_FULL_NAME
       - PR_NUMBER=$_PR_NUMBER

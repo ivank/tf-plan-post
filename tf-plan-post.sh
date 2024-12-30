@@ -358,7 +358,9 @@ else
 			gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method DELETE
 
 			echo -e "${CYAN}Comment${END} Creating new comment"
+			set +e
 			gh api "/repos/${REPO}/issues/$PR_NUMBER/comments" --silent --method POST --field body="$BODY"
+			set -e
 		else
 			echo -e "${CYAN}Comment${END} Updating existing comment"
 			gh api "/repos/${REPO}/issues/comments/${GENERATED_PLAN_COMMENT_ID}" --silent --method PATCH --field body="$BODY"
