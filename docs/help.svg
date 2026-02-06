@@ -60,7 +60,7 @@
 <text x="4px" y="812px"><tspan>  </tspan><tspan class="fa5">--token</tspan><tspan>=value              GitHub token, provided directly or saved in google secret manager (or ENV: </tspan><tspan class="fa2">$TOKEN</tspan><tspan>)</tspan></text>
 <text x="4px" y="828px"><tspan>                             </tspan><tspan class="fa1">REQUIRED </tspan><tspan>Unless </tspan><tspan class="fa6">--client-id </tspan><tspan>and </tspan><tspan class="fa6">--installation-key </tspan><tspan>are provided,</tspan></text>
 <text x="4px" y="844px"><tspan>                             Example: sm://my-project/my-github-token</tspan></text>
-<text x="4px" y="860px"><tspan>  </tspan><tspan class="fa5">--client-id</tspan><tspan>=value             Github App ID (or ENV: </tspan><tspan class="fa2">$CLIENT_ID</tspan><tspan>)</tspan></text>
+<text x="4px" y="860px"><tspan>  </tspan><tspan class="fa5">--client-id</tspan><tspan>=value             Github App Client ID (or ENV: </tspan><tspan class="fa2">$CLIENT_ID</tspan><tspan>)</tspan></text>
 <text x="4px" y="876px"><tspan>                             </tspan><tspan class="fa1">REQUIRED </tspan><tspan>if </tspan><tspan class="fa6">--token </tspan><tspan>is not provided, needs </tspan><tspan class="fa6">--installation-key</tspan></text>
 <text x="4px" y="892px"><tspan>  </tspan><tspan class="fa5">--installation-id</tspan><tspan>=value    Installation id, if not provided, it will be fetched from the GitHub API</tspan></text>
 <text x="4px" y="908px"><tspan>                             (or ENV: </tspan><tspan class="fa2">$INSTALLATION_ID</tspan><tspan>)</tspan></text>
