@@ -17,7 +17,7 @@ steps:
   - id: Post
     name: ghcr.io/ivank/tf-plan-post:1.0.0
     env:
-      - APP_ID=123
+      - CLIENT_ID=dfjasdfalskdfdcsdf
       - INSTALLATION_KEY=sm://my-project/my-installation-key
       - REPO=$REPO_FULL_NAME
       - PR_NUMBER=$_PR_NUMBER

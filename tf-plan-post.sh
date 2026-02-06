@@ -8,7 +8,7 @@ set -e
 NO_COLOR="${NO_COLOR:-}"
 INSTALLATION_ID="${INSTALLATION_ID:-}"
 TOKEN="${TOKEN:-}"
-APP_ID="${APP_ID:-}"
+CLIENT_ID="${CLIENT_ID:-}"
 INSTALLATION_KEY="${INSTALLATION_KEY:-}"
 PR_NUMBER="${PR_NUMBER:-}"
 MODE="${MODE:-recreate}"
@@ -53,7 +53,6 @@ REQUIRED_COMMANDS["gh"]="https://cli.github.com/"
 
 OPTIONAL_COMMANDS["berglas"]="https://github.com/GoogleCloudPlatform/berglas?tab=readme-ov-file#installation"
 OPTIONAL_COMMANDS["openssl"]="https://openssl.org/"
-OPTIONAL_COMMANDS["base64"]="https://www.gnu.org/software/coreutils/manual/html_node/base64-invocation.html"
 
 # A function to display an error message in stderr and exit
 error() {
@@ -84,12 +83,12 @@ Using [berglas](https://github.com/GoogleCloudPlatform/berglas) to access the se
 
     ${CYAN}$(basename "$0")${END} ${PINK}--token${END}=github_pat_...
     ${CYAN}$(basename "$0")${END} ${PINK}--token${END}=sm://my-project/my-github-token
-    ${CYAN}$(basename "$0")${END} ${PINK}--app-id${END}=1234 ${PINK}--installation-key${END}=sm://my-project/my-installation-key
+    ${CYAN}$(basename "$0")${END} ${PINK}--client-id${END}=1234 ${PINK}--installation-key${END}=sm://my-project/my-installation-key
 
 Those can also be provided as environment variables.
 
     ${GREEN}TOKEN${END}=sm://my-project/my-github-token ${CYAN}$(basename "$0")${END}
-    ${GREEN}APP_ID${END}=1234 ${GREEN}INSTALLATION_KEY${END}=sm://my-project/my-installation-key ${CYAN}$(basename "$0")${END}
+    ${GREEN}CLIENT_ID${END}=1234 ${GREEN}INSTALLATION_KEY${END}=sm://my-project/my-installation-key ${CYAN}$(basename "$0")${END}
 
 Additionally you need to provide the PR number, repository.
 Also expects the Terraform plan text output (or error output) to be located at \"$PLAN_TEXT_FILE\".
@@ -118,22 +117,22 @@ Examples:
     ${CYAN}$(basename "$0")${END} \\
       ${PINK}--pr-number${END}=1234 \\
       ${PINK}--repo${END}=org/repo \\
-      ${PINK}--app-id${END}=1234 \\
+      ${PINK}--client-id${END}=1234 \\
       ${PINK}--installation-key${END}=sm://my-project/my-installation-key
 
 Options:
 
   ${PINK}--help${END}                     Show this message
   ${PINK}--token${END}=value              GitHub token, provided directly or saved in google secret manager (or ENV: ${GREEN}\$TOKEN${END})
-  ${PINK}${END}                           ${RED}REQUIRED${END} Unless ${CYAN}--app-id${END} and ${CYAN}--installation-key${END} are provided,
+  ${PINK}${END}                           ${RED}REQUIRED${END} Unless ${CYAN}--client-id${END} and ${CYAN}--installation-key${END} are provided,
   ${PINK}${END}                           Example: sm://my-project/my-github-token
-  ${PINK}--app-id${END}=value             Github App ID (or ENV: ${GREEN}\$APP_ID${END})
+  ${PINK}--client-id${END}=value             Github App ID (or ENV: ${GREEN}\$CLIENT_ID${END})
   ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--token${END} is not provided, needs ${CYAN}--installation-key${END}
   ${PINK}--installation-id${END}=value    Installation id, if not provided, it will be fetched from the GitHub API
   ${PINK}${END}                           (or ENV: ${GREEN}\$INSTALLATION_ID${END})
   ${PINK}--installation-key${END}=value   Installation key provided directly or saved in google secret manager
   ${PINK}${END}                           (or ENV: ${GREEN}\$INSTALLATION_KEY${END})
-  ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--app-id${END} is provided, Example: sm://my-project/my-installation-key)
+  ${PINK}${END}                           ${RED}REQUIRED${END} if ${CYAN}--client-id${END} is provided, Example: sm://my-project/my-installation-key)
   ${PINK}--pr-number${END}=value          ${RED}REQUIRED${END} Pull Request number (or ENV: ${GREEN}\$PR_NUMBER${END})
   ${PINK}--repo${END}=value               ${RED}REQUIRED${END} Repository, Example: org/repo (or ENV ${GREEN}\$REPO${END})
   ${PINK}--plan-text-file${END}=value     Terraform plan text output (or error output)
@@ -164,8 +163,8 @@ for i in "$@"; do
 		TOKEN="${i#*=}"
 		shift
 		;;
-	--app-id=*)
-		APP_ID="${i#*=}"
+	--client-id=*)
+		CLIENT_ID="${i#*=}"
 		shift
 		;;
 	--installation-key=*)
@@ -260,32 +259,33 @@ else
 		fi
 		gh auth login --with-token <<<"$TOKEN"
 		echo -e "${CYAN}Auth${END} Token Loaded"
-	elif [ "$APP_ID" ] && [ "$INSTALLATION_KEY" ]; then
+	elif [ "$CLIENT_ID" ] && [ "$INSTALLATION_KEY" ]; then
 		if [[ "$INSTALLATION_KEY" =~ ^sm:// ]]; then
 			echo -e "${CYAN}Auth${END} Loading Installation Key from Google Secret $INSTALLATION_KEY"
 			check_optional_command berglas
 			INSTALLATION_KEY=$(berglas access "$INSTALLATION_KEY")
 		fi
 
-		check_optional_command base64
 		check_optional_command openssl
 
 		# JWT
-		# ======
+		# ======base6
+		b64enc() { openssl base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n'; }
+
 		NOW=$(date +%s)
 		IAT=$((NOW - 60))  # Issues 60 seconds in the past
 		EXP=$((NOW + 600)) # Expires 10 minutes in the future
 
-		HEADER=$(echo -n '{"typ":"JWT","alg":"RS256"}' | base64 -w 0)
-		PAYLOAD=$(echo -n "{\"iat\":${IAT},\"exp\":${EXP},\"iss\":\"${APP_ID}\"}" | base64 -w 0)
-		SIGNATURE=$(openssl dgst -sha256 -sign <(echo -n "$INSTALLATION_KEY") <(echo -n "$HEADER.$PAYLOAD") | base64 -w 0)
+		HEADER=$(echo -n '{"typ":"JWT","alg":"RS256"}' | b64enc)
+		PAYLOAD=$(echo -n "{\"iat\":${IAT},\"exp\":${EXP},\"iss\":\"${CLIENT_ID}\"}" | b64enc)
+		SIGNATURE=$(openssl dgst -sha256 -sign <(echo -n "$INSTALLATION_KEY") <(echo -n "$HEADER.$PAYLOAD") | b64enc)
 		JWT_HEADER="Authorization: Bearer $HEADER.$PAYLOAD.$SIGNATURE"
 
 		if [ -z "$INSTALLATION_ID" ]; then
 			echo -e "${CYAN}Auth${END} No Installation Id Provided, loading from GitHub API"
 			INSTALLATIONS=$(curl --silent --header "$JWT_HEADER" https://api.github.com/app/installations)
-			INSTALLATION_ID=$(echo "$INSTALLATIONS" | jq --raw-output "[.[] | select(.app_id == $APP_ID) | .id][0]")
-			echo -e "${CYAN}Auth${END} Using $INSTALLATION_ID (for APP $APP_ID)"
+			INSTALLATION_ID=$(echo "$INSTALLATIONS" | jq --raw-output "[.[] | select(.CLIENT_id == $CLIENT_ID) | .id][0]")
+			echo -e "${CYAN}Auth${END} Using $INSTALLATION_ID (for APP $CLIENT_ID)"
 		fi
 
 		ACCESS_TOKEN=$(curl --silent --request POST --header "$JWT_HEADER" "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
@@ -293,7 +293,7 @@ else
 		gh auth login --with-token <<<"$TOKEN"
 		echo -e "${CYAN}Auth${END} Installation Token generated"
 	else
-		echo -e "${CYAN}Auth${END} No explicit auth found (--token or --app-id and --installation-key), using GitHub CLI default"
+		echo -e "${CYAN}Auth${END} No explicit auth found (--token or --client-id and --installation-key), using GitHub CLI default"
 	fi
 fi
 

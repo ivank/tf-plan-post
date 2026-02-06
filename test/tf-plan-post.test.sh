@@ -229,7 +229,7 @@ test_create_comment_and_post() {
 
 	EXPECTED=$(
 		cat <<-"EOF"
-			Auth No explicit auth found (--token or --app-id and --installation-key), using GitHub CLI default
+			Auth No explicit auth found (--token or --client-id and --installation-key), using GitHub CLI default
 			Comment Searching for existing comment in PR https://github.com/ivank/tf-plan-post/pull/1
 			Comment Existing comment not found, creating
 			Comment Successful
@@ -285,7 +285,7 @@ test_update_existing_comment_with_error_plan() {
 
 	EXPECTED=$(
 		cat <<-"EOF"
-			Auth No explicit auth found (--token or --app-id and --installation-key), using GitHub CLI default
+			Auth No explicit auth found (--token or --client-id and --installation-key), using GitHub CLI default
 			Comment Searching for existing comment in PR https://github.com/ivank/tf-plan-post/pull/1
 			Comment Existing comment found
 			Comment Updating existing comment
@@ -333,7 +333,7 @@ test_recreate_comment() {
 
 	EXPECTED=$(
 		cat <<-"EOF"
-			Auth No explicit auth found (--token or --app-id and --installation-key), using GitHub CLI default
+			Auth No explicit auth found (--token or --client-id and --installation-key), using GitHub CLI default
 			Comment Searching for existing comment in PR https://github.com/ivank/tf-plan-post/pull/1
 			Comment Existing comment found
 			Comment Deleting existing comment
